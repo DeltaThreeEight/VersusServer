@@ -31,9 +31,13 @@ public class ClientCommandHandler {
                     if (sel != null) {
                         client.setCreature(sel);
                         sendMessage("Выбран персонаж: " + sel.getName());
+                        client.setName(sel.getName());
                     } else
                         sendMessage("Персонаж не найден");
                 }
+                break;
+            case "showname":
+                sendMessage(client.getName());
                 break;
             case "createnew":
                 sendMessage("Все пробелы в идентификатре будут удалены!\n" +
@@ -55,6 +59,7 @@ public class ClientCommandHandler {
                 WorldManager.addNewCreature(key, crt);
                 client.setCreature(crt);
                 sendMessage("Персонаж успешно создан");
+                client.setName(crt.getName());
                 break;
             case "move":
                 if (commands.length < 2)
@@ -70,7 +75,7 @@ public class ClientCommandHandler {
                             try {
                                 Creature crte = client.getCreature();
                                 crte.move(move);
-                                sendMessage("Перемещение успешно. Новые координаты: "+crte.getLocation().getX()+" "+crte.getLocation().getY());
+                                sendMessage("Перемещение успешно. Новые координаты: "+crte.getLocation().getName());
                             } catch (MoveException e) {
                                 sendMessage(e.getMessage());
                             }
@@ -81,7 +86,6 @@ public class ClientCommandHandler {
                 }
                 break;
             case "exit":
-                sendMessage("Отключение от сервера");
                 break;
             default:
                 sendMessage("Команда не найдена");
@@ -110,6 +114,7 @@ public class ClientCommandHandler {
                 "select {string} - выбрать персонажа, которого вы создали ранее\n" +
                 "createnew - создать нового персонажа\n" +
                 "move {direction} - переместить выбранного персонажа, где {direction}:left, right, forward, back\n" +
+                "showname - вывод ваше текущее имя на экран" +
                 "help - справка по командам\n" +
                 "exit - отключиться от сервера\n");
     }

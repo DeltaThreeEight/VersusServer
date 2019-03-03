@@ -1,6 +1,7 @@
 package Server;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -12,18 +13,18 @@ public class Server extends Thread {
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
-            serverSocket = new ServerSocket(6666);
-            System.out.println("Сервер запущен!");
+            serverSocket = new ServerSocket(6666,6666, InetAddress.getByName("26.17.59.67"));
+            System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
+            System.out.println("Порт: "+serverSocket.getLocalPort());
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
         }
 
         while (true) {
-            Socket client = waitConnection();
-            clients.add(new Client(client));
-            //new Thread(() -> servClient(client));
-            servClient(client);
+            Client client = new Client(waitConnection());
+            clients.add(client);
+            client.startService();
         }
     }
 
@@ -31,29 +32,6 @@ public class Server extends Thread {
         for (Client c : clients)
             c.closeConnection();
         System.exit(0);
-    }
-
-    private void servClient(Socket client) {
-
-        Client client1 = new Client(client);
-        String command = "";
-
-        ClientCommandHandler cmdHandler = new ClientCommandHandler(client1);
-
-        cmdHandler.executeCommand("help");
-
-        try {
-            while (!command.equals("exit")) {
-                command = client1.readLine();
-                System.out.print("Клиент: " + command + "\n");
-                cmdHandler.executeCommand(command);
-            }
-        } catch (IOException e) {
-            System.out.println("Потеряно соединение с клиентом.");
-            return;
-        }
-
-        System.out.println("\nКлиент отключился.");
     }
 
     private Socket waitConnection() {

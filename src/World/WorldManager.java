@@ -7,7 +7,7 @@ public class WorldManager {
 
     private static Weather weather = Weather.SUNNY;
 
-    private static HashMap<String, Creature> creatures = new HashMap<String, Creature>();
+    private static Map<String, Creature> creatures = Collections.synchronizedMap(new HashMap<String, Creature>());
     private static Date dateInit = new Date();
 
     private WorldManager(String iName) {
@@ -111,7 +111,7 @@ public class WorldManager {
     /**
      * Возвращает коллекцию в текущем состоянии.
      */
-    public static HashMap<String, Creature> getCreatures() {
+    public static Map<String, Creature> getCreatures() {
         return creatures;
     }
 

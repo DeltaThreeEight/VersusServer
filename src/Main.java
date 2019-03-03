@@ -10,6 +10,7 @@ public class Main {
 
         String file = "E:\\file.txt";
 
+
         //Запуск нового потока для записи в файл при перехвате сигнала завершения
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -19,7 +20,7 @@ public class Main {
             }
         }));
 
-        if (file != null) {
+        if (args.length == 0) {
             try {
                 if (MyReadWriter.readFile(file)) {
                     System.out.println("Файл успешно прочитан");
