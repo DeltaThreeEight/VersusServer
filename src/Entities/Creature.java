@@ -15,13 +15,12 @@ public abstract class Creature implements Moveable, Comparable<Creature> {
         this.loc = iLocation;
     }
 
-    public void move(Locations iLocation) throws MoveException, NotAliveException {
+    public void move(Moves move) throws MoveException, NotAliveException {
         checkAlive();
-        if (iLocation == null) throw new MoveException(this, "Перемещение невозможно. Локация не существует.");
-        this.loc = iLocation;
+        loc.setXY((int) loc.getX()+ move.getX(), (int) loc.getY() + move.getY());
         if (WorldManager.getWeather() == Weather.RAIN) this.setWet(true);
         else this.setWet(false);
-        System.out.println(getName()+" перемещается в "+iLocation.getName());
+        System.out.println(getName()+" перемещается в "+loc.getName());
     }
 
     public Locations getLocation() {

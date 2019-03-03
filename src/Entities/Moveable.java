@@ -4,6 +4,6 @@ import Exceptions.*;
 import World.*;
 
 public interface Moveable {
-    void move(Locations iLocation) throws MoveException, NotAliveException;
+    void move(Moves move) throws MoveException, NotAliveException;
     Locations getLocation();
 }

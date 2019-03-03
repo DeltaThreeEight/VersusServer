@@ -13,8 +13,20 @@ public class Locations {
         this.name = iName;
     }
 
+    public Locations(double iX,double iY) {
+        this.x = iX;
+        this.y = iY;
+        this.isBuilding = false;
+        this.name = "Текущее местоположение";
+    }
+
+    public void setXY(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
     public String getName() {
-        return name;
+        return getX()+" "+getY();
     }
 
     public double getX() {

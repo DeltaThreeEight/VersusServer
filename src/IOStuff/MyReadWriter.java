@@ -48,7 +48,7 @@ import java.util.Scanner;
  *
  * <b>remove</b> <i>{string key}</i> - удалить элемент из коллекции по его ключу.
  *
- * <b>exit</b> - выйти из программы и сохранить текущую коллекцию в файле, который был указан при запуске</pre>
+ * <b>stop</b> - остановить сервер</pre>
  */
 public class MyReadWriter {
 
@@ -122,7 +122,6 @@ public class MyReadWriter {
     public static boolean readCommand(String file) {
         try{
             Scanner scanner = new Scanner(System.in);
-            System.out.print("Введите команду: ");
             String command = scanner.nextLine();
             String[] commands = command.split("\\s+");
             commands[0] = commands[0].toUpperCase();
@@ -182,7 +181,7 @@ public class MyReadWriter {
                         WorldManager.removeCreature(commands[1]);
                     }
                     break;
-                case "EXIT":
+                case "STOP":
                     scanner.close();
                     return true;
                 default:
@@ -260,7 +259,7 @@ public class MyReadWriter {
         param[2] = findString(param[2]);
         param[1] = param[1].toUpperCase();
         if (param[1].equals("HUMAN") || param[1].equals("ANIMAL") || param[1].equals("SHOGGOT"))
-        switch(param[1]) {
+            switch(param[1]) {
                 case "ANIMAL":
                     return new Animal(param[2], Animals.valueOf(param[k].toUpperCase()), new Locations(Double.valueOf(param[3]), Double.valueOf(param[4]),param[6], Boolean.valueOf(param[5])));
                 case "HUMAN":
@@ -268,7 +267,7 @@ public class MyReadWriter {
                 case "SHOGGOT":
                     return new Shoggot(param[2], new Locations(Double.valueOf(param[3]), Double.valueOf(param[4]),param[6], Boolean.valueOf(param[5])));
             }
-            return null;
+        return null;
     }
 
     /**
@@ -300,6 +299,6 @@ public class MyReadWriter {
                 "import {string path} - добавить в коллекцию элементы из файла, где {string path) - путь к файлу.\n\n" +
                 "info - вывести информацию о коллекции.\n\n" +
                 "remove {string} - удалить элемент из коллекции по его ключу.\n\n" +
-                "exit - выйти из программы и сохранить текущую коллекцию в файле, который был указан при запуске.\n");
+                "stop - остановить сервер.\n");
     }
 }

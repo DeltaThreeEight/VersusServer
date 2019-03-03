@@ -74,19 +74,21 @@ public class WorldManager {
      * Вывести в стандатный поток вывода все ключи коллекции.
      */
     public static void showCreatures() {
-        System.out.println("Список элементов коллекции:");
+        String showCreatures = "";
+        showCreatures = showCreatures + "Список элементов коллекции:\n";
         for (String c : creatures.keySet()) {
-            System.out.println(c);
+            showCreatures = showCreatures + c.toString() + "\n";
         }
+        System.out.println(showCreatures);
     }
 
     /**
      * Вывести в стандартый поток вывода информацию о коллекции...
      */
     public static void getInfo() {
-        System.out.println("Дата инициализации: " +dateInit);
-        System.out.println("Тип: HashMap");
-        System.out.println("Количество элементов: " +creatures.size());
+        System.out.println("Дата инициализации: " +dateInit+"\n"
+        + "Тип: HashMap\n"
+        + "Количество элементов: " +creatures.size());
     }
 
     /**
