@@ -3,5 +3,7 @@ package Server;
 public enum cActions {
     DESERIALIZE,
     SEND,
-    ADDPLAYER;
+    ADDPLAYER,
+    MOVPLAYER,
+    REMPLAYER;
 }

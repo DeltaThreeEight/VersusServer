@@ -31,7 +31,7 @@ public class Client {
 
     public void closeConnection() {
         try {
-            writeUTF("Сервер закрывает соединие...");
+            sendMessage(cActions.SEND, "\nСервер закрывает соединение...\n");
             writer.close();
             client.close();
         } catch (IOException e) {
@@ -53,7 +53,7 @@ public class Client {
 
         try {
             while (!command.equals("exit")) {
-                writeUTF("SEND^"+"Введите команду: ");
+                sendMessage(cActions.SEND, "Введите комнаты: ");
                 command = readLine();
                 System.out.print("Клиент " +name+": " + command + "\n");
                 if (command == null) break;
@@ -67,8 +67,12 @@ public class Client {
         System.out.println("\nКлиент "+name+" отключился.");
     }
 
-    public void writeUTF(String str) throws IOException {
-        writer.writeUTF(str);
+    public void sendMessage(cActions action, String str) {
+        try {
+            writer.writeUTF(action + "^" + str);
+        } catch (IOException e) {
+
+        }
     }
 
     public String getName() {

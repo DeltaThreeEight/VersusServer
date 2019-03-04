@@ -1,6 +1,7 @@
 package Server;
 
 import Entities.Human;
+import Entities.Moves;
 import IOStuff.MyDeserialize;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,7 +21,7 @@ public class Server extends Thread {
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
-            serverSocket = new ServerSocket(8900,8900, InetAddress.getByName("localhost"));
+            serverSocket = new ServerSocket(8900,8900, InetAddress.getByName("26.17.59.67"));
             System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
             System.out.println("Порт: "+serverSocket.getLocalPort());
         } catch (IOException e) {
@@ -35,20 +36,36 @@ public class Server extends Thread {
         }
     }
 
+    public static void addPlayer(Client client, Human player) {
+        for (Client c : clients) {
+            if (c != client) {
+                c.sendMessage(cActions.ADDPLAYER, gson.toJson(player, Human.class));
+            }
+        }
+    }
+
+    public static void movPlayer(Client client, Human player, Moves move) {
+        for (Client c : clients) {
+            if (c != client) {
+                c.sendMessage(cActions.MOVPLAYER, move+"*"+gson.toJson(player, Human.class));
+            }
+        }
+    }
+
+    public static void remPlayer(Human player) {
+        for (Client c : clients) {
+                c.sendMessage(cActions.REMPLAYER, gson.toJson(player, Human.class));
+        }
+    }
+
     public static void sendToAllClients(String str, Client client) {
         if (client != null) {
             for (Client c : clients) {
-                try {
-                    c.writeUTF("SEND^" +"\n"+ client.getName() + ": " + str + "\n");
-                } catch (IOException e) {
-                }
+                c.sendMessage(cActions.SEND, "\n" + client.getName() + ": " + str + "     ");
             }
         }
         else for (Client c : clients) {
-            try {
-                c.writeUTF("SEND^"  + "\nСообщение от сервера -> " + str + "\n");
-            } catch (IOException e) {
-            }
+            c.sendMessage(cActions.SEND, "\nСообщение от сервера -> "+ str + "     ");
         }
     }
 

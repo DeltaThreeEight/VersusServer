@@ -190,7 +190,6 @@ public class MyReadWriter {
                 default:
                     System.out.println("Команда не найдена");
             }
-            System.out.println();
             return false;
         }
         catch (NoSuchElementException e) {

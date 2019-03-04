@@ -31,18 +31,22 @@ public class ClientCommandHandler {
                 else {
                     Human sel = WorldManager.getHuman(commands[1]);
                     if (sel != null) {
+                        if (client.getHuman() != null) Server.remPlayer(client.getHuman());
                         client.setHuman(sel);
                         sendMessage(cActions.SEND,"Выбран персонаж: " + sel.getName()+"\n");
                         sendMessage(cActions.DESERIALIZE, Server.gson.toJson(sel, Human.class));
+                        Server.addPlayer(client, sel);
                         client.setName(sel.getName());
                     } else
                         sendMessage(cActions.SEND,"Персонаж не найден\n");
                 }
                 break;
             case "createnew":
+                if (client.getHuman() != null) Server.remPlayer(client.getHuman());
                 Human human = Server.gson.fromJson(command.replace(commands[0] + " " + commands[1], ""), Human.class);
                 WorldManager.addNewHuman(commands[1], human);
                 client.setHuman(human);
+                Server.addPlayer(client, human);
                 sendMessage(cActions.SEND,"Выбран персонаж: " + human.getName()+"\n");
                 client.setName(human.getName());
                 break;
@@ -61,6 +65,7 @@ public class ClientCommandHandler {
                                 Human crte = client.getHuman();
                                 crte.move(move);
                                 sendMessage(cActions.SEND,"Перемещение успешно. Новые координаты: "+crte.getLocation().getName()+"\n");
+                                Server.movPlayer(client, crte, move);
                             } catch (NotAliveException e) {
                                 sendMessage(cActions.SEND, e.getMessage());
                             }
@@ -69,6 +74,8 @@ public class ClientCommandHandler {
                 }
                 break;
             case "exit":
+                if (client.getHuman() != null)
+                    Server.remPlayer(client.getHuman());
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");
@@ -85,11 +92,7 @@ public class ClientCommandHandler {
     }
 
     public void sendMessage(cActions action, String str) {
-        try {
-            client.writeUTF(action + "^" + str);
-        } catch (IOException e) {
-            System.out.println("Невозможно отравить ответ клиенту.");
-        }
+        client.sendMessage(action, str);
     }
 
     public void helpClient() {
