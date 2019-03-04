@@ -1,5 +1,10 @@
 package Server;
 
+import Entities.Human;
+import IOStuff.MyDeserialize;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -7,13 +12,15 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class Server extends Thread {
+    static GsonBuilder builder = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize());
+    static Gson gson = builder.create();
     private ServerSocket serverSocket = null;
-    private ArrayList<Client> clients = new ArrayList<Client>();
+    private static ArrayList<Client> clients = new ArrayList<Client>();
 
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
-            serverSocket = new ServerSocket(6666,6666, InetAddress.getByName("26.17.59.67"));
+            serverSocket = new ServerSocket(8900,8900, InetAddress.getByName("localhost"));
             System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
             System.out.println("Порт: "+serverSocket.getLocalPort());
         } catch (IOException e) {
@@ -28,10 +35,31 @@ public class Server extends Thread {
         }
     }
 
+    public static void sendToAllClients(String str, Client client) {
+        if (client != null) {
+            for (Client c : clients) {
+                try {
+                    c.writeUTF("SEND^" +"\n"+ client.getName() + ": " + str + "\n");
+                } catch (IOException e) {
+                }
+            }
+        }
+        else for (Client c : clients) {
+            try {
+                c.writeUTF("SEND^"  + "\nСообщение от сервера -> " + str + "\n");
+            } catch (IOException e) {
+            }
+        }
+    }
+
     public void stopServer() {
         for (Client c : clients)
             c.closeConnection();
         System.exit(0);
+    }
+
+    public static ArrayList<Client> getClients() {
+        return clients;
     }
 
     private Socket waitConnection() {

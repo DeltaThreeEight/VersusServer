@@ -1,9 +1,10 @@
 package Entities;
 
-import Exceptions.*;
-import World.*;
+import Exceptions.MoveException;
+import Exceptions.NotAliveException;
+import World.Location;
 
 public interface Moveable {
     void move(Moves move) throws MoveException, NotAliveException;
-    Locations getLocation();
+    Location getLocation();
 }

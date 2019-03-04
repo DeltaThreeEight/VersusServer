@@ -1,31 +1,43 @@
 package IOStuff;
 
-import Entities.*;
-import World.Locations;
+import Entities.Human;
+import Entities.Merc;
+import Entities.Spy;
+import World.Location;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
 
-public class MyDeserialize implements JsonDeserializer<Creature>  {
+public class MyDeserialize implements JsonSerializer<Human>, JsonDeserializer<Human> {
 
-    public Creature deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public Human deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = json.getAsJsonObject();
         JsonObject locObject = object.get("loc").getAsJsonObject();
 
-        String locName = locObject.get("name").getAsString();
         Double x = locObject.get("x").getAsDouble();
         Double y = locObject.get("y").getAsDouble();
-        Boolean building = locObject.get("isBuilding").getAsBoolean();
 
-        Locations loc = new Locations(x,y,locName,building);
+        Location loc = new Location(x,y);
 
         String name = object.get("name").getAsString();
-        String jtype = object.get("type").getAsString();
-        if (jtype.equals("Human")) return new Human(name, loc);
-        if (jtype.equals("Shoggot")) return new Shoggot(name, loc);
+        String jtype = object.get("side").getAsString();
+        if (jtype.equals("Spy")) return new Spy(name, loc);
+        if (jtype.equals("Merc")) return new Merc(name, loc);
 
-        Animals atype = Animals.valueOf(object.get("kindOfAnimal").getAsString());
-        if (jtype.equals("Animal")) return new Animal(name, atype, loc);
         throw new JsonParseException("Не удалось распознать тип");
+    }
+
+    public JsonElement serialize(Human src, Type type,
+                                 JsonSerializationContext context) {
+        JsonObject human = new JsonObject();
+        JsonObject loc = new JsonObject();
+
+        loc.addProperty("x", src.getLocation().getX());
+        loc.addProperty("y", src.getLocation().getY());
+
+        human.addProperty("side", src.getClass().toString().replace("class Entities.", ""));
+        human.addProperty("name", src.getName());
+        human.add("loc", loc);
+        return human;
     }
 }

@@ -1,6 +1,7 @@
 package Server;
 
-import Entities.Creature;
+
+import Entities.Human;
 
 import java.io.*;
 import java.net.Socket;
@@ -13,7 +14,7 @@ public class Client {
     private Socket client;
     private Thread thread;
 
-    private Creature creature;
+    private Human human;
 
     public Client(Socket socket) {
         name = ""+id++;
@@ -52,8 +53,10 @@ public class Client {
 
         try {
             while (!command.equals("exit")) {
+                writeUTF("SEND^"+"Введите команду: ");
                 command = readLine();
                 System.out.print("Клиент " +name+": " + command + "\n");
+                if (command == null) break;
                 cmdHandler.executeCommand(command);
             }
         } catch (IOException e) {
@@ -80,12 +83,12 @@ public class Client {
         return reader.readLine();
     }
 
-    public void setCreature(Creature creature) {
-        this.creature = creature;
+    public void setHuman(Human human) {
+        this.human = human;
     }
 
-    public Creature getCreature() {
-        return creature;
+    public Human getHuman() {
+        return human;
     }
 
 }

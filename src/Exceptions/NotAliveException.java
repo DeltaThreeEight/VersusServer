@@ -1,16 +1,16 @@
 package Exceptions;
 
-import Entities.Creature;
+import Entities.Human;
 
 public class NotAliveException extends RuntimeException {//Unchecked exception
-    private Creature creature; //Объект пытавшийся переместиться
+    private Human human; //Объект пытавшийся переместиться
 
-    public NotAliveException(Creature creature) {
-        super(creature.getName() + " мертв.");
-        this.creature = creature;
+    public NotAliveException(Human human) {
+        super(human.getName() + " мертв.");
+        this.human = human;
     }
 
-    public Creature getNotAliveCreature() {
-        return creature;
+    public Human getNotAliveHuman() {
+        return human;
     }
 }

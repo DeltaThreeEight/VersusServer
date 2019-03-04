@@ -1,10 +1,8 @@
 package Server;
 
-import Entities.Creature;
 import Entities.Human;
 import Entities.Moves;
-import Exceptions.MoveException;
-import World.Locations;
+import Exceptions.NotAliveException;
 import World.WorldManager;
 import java.io.IOException;
 
@@ -18,54 +16,41 @@ public class ClientCommandHandler {
 
     public void executeCommand(String command) {
         String[] commands = command.split(" ");
-        if (commands.length == 0) commands = new String[]{""};
+        if (commands.length == 0) return;
+
         switch(commands[0]) {
             case "help":
                 helpClient();
                 break;
+            case "chat":
+                Server.sendToAllClients(command.replace(commands[0]+" ", ""), client);
+                break;
             case "select":
                 if (commands.length < 2)
-                    sendMessage("Отсутсвуют аргументы");
+                    sendMessage(cActions.SEND,"Отсутсвуют аргументы\n");
                 else {
-                    Creature sel = WorldManager.getCreature(commands[1]);
+                    Human sel = WorldManager.getHuman(commands[1]);
                     if (sel != null) {
-                        client.setCreature(sel);
-                        sendMessage("Выбран персонаж: " + sel.getName());
+                        client.setHuman(sel);
+                        sendMessage(cActions.SEND,"Выбран персонаж: " + sel.getName()+"\n");
+                        sendMessage(cActions.DESERIALIZE, Server.gson.toJson(sel, Human.class));
                         client.setName(sel.getName());
                     } else
-                        sendMessage("Персонаж не найден");
+                        sendMessage(cActions.SEND,"Персонаж не найден\n");
                 }
-                break;
-            case "showname":
-                sendMessage(client.getName());
                 break;
             case "createnew":
-                sendMessage("Все пробелы в идентификатре будут удалены!\n" +
-                        "Введите идентификатор персонажа, по котому его потом можно будет выбрать: ");
-                String key = "";
-                key = readLine().trim();
-                String name = "";
-                while (key.equals("")) {
-                    sendMessage("Поле не должно быть пустым");
-                    key = readLine().trim();
-                }
-                sendMessage("Введите имя персонажа: ");
-                name = readLine();
-                while (name.trim().equals("")) {
-                    sendMessage("Поле не должно быть пустым");
-                    name = readLine();
-                }
-                Creature crt = new Human(name, new Locations(0, 0));
-                WorldManager.addNewCreature(key, crt);
-                client.setCreature(crt);
-                sendMessage("Персонаж успешно создан");
-                client.setName(crt.getName());
+                Human human = Server.gson.fromJson(command.replace(commands[0] + " " + commands[1], ""), Human.class);
+                WorldManager.addNewHuman(commands[1], human);
+                client.setHuman(human);
+                sendMessage(cActions.SEND,"Выбран персонаж: " + human.getName()+"\n");
+                client.setName(human.getName());
                 break;
             case "move":
                 if (commands.length < 2)
-                    sendMessage("Отсутсвуют аргументы");
+                    sendMessage(cActions.SEND,"Отсутсвуют аргументы\n");
                 else {
-                    if (client.getCreature() != null) {
+                    if (client.getHuman() != null) {
                         Moves move = null;
                         try {
                             move = Moves.valueOf(commands[1].toUpperCase());
@@ -73,22 +58,20 @@ public class ClientCommandHandler {
                         }
                         if (move != null) {
                             try {
-                                Creature crte = client.getCreature();
+                                Human crte = client.getHuman();
                                 crte.move(move);
-                                sendMessage("Перемещение успешно. Новые координаты: "+crte.getLocation().getName());
-                            } catch (MoveException e) {
-                                sendMessage(e.getMessage());
+                                sendMessage(cActions.SEND,"Перемещение успешно. Новые координаты: "+crte.getLocation().getName()+"\n");
+                            } catch (NotAliveException e) {
+                                sendMessage(cActions.SEND, e.getMessage());
                             }
-                        } else
-                            sendMessage("Неверно указано направление движения");
-                    } else
-                        sendMessage("Не выбран персонаж");
+                        }
+                    }
                 }
                 break;
             case "exit":
                 break;
             default:
-                sendMessage("Команда не найдена");
+                sendMessage(cActions.SEND, "Команда не найдена\n");
         }
     }
 
@@ -101,20 +84,21 @@ public class ClientCommandHandler {
         }
     }
 
-    public void sendMessage(String str) {
+    public void sendMessage(cActions action, String str) {
         try {
-            client.writeUTF(str);
+            client.writeUTF(action + "^" + str);
         } catch (IOException e) {
             System.out.println("Невозможно отравить ответ клиенту.");
         }
     }
 
     public void helpClient() {
-        sendMessage("Справка по командам: \n" +
-                "select {string} - выбрать персонажа, которого вы создали ранее\n" +
+        sendMessage(cActions.SEND, "Справка по командам: \n" +
+                "select [идентифкатор персонажа] - выбрать персонажа, которого вы создали ранее\n" +
                 "createnew - создать нового персонажа\n" +
-                "move {direction} - переместить выбранного персонажа, где {direction}:left, right, forward, back\n" +
-                "showname - вывод ваше текущее имя на экран" +
+                "move [направление] - переместить выбранного персонажа, где направление:left, right, forward, back\n" +
+                "showstats - вывести информацию о персонаже\n" +
+                "chat [сообщение] - отправить сообщение другим игрокам\n" +
                 "help - справка по командам\n" +
                 "exit - отключиться от сервера\n");
     }

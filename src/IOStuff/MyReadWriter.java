@@ -1,6 +1,8 @@
 package IOStuff;
 
 import Entities.*;
+import Server.Client;
+import Server.Server;
 import World.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -78,12 +80,12 @@ public class MyReadWriter {
             }
             if (line.contains(",")) {
                 try {
-                    Creature element = pasrseCSV(line);
+                    Human element = pasrseCSV(line);
                     String param[] = line.split(",");
                     if (element == null) {
                         return false;
                     }
-                    WorldManager.addNewCreature(param[0], element);
+                    WorldManager.addNewHuman(param[0], element);
                 } catch (IllegalArgumentException e) {
                     return false;
                 }
@@ -102,12 +104,11 @@ public class MyReadWriter {
     public static void writeFile(String file) throws IOException{
         if (canRead) {
             OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file));
-            for (String s : WorldManager.getCreatures().keySet()) {
+            for (String s : WorldManager.getHumans().keySet()) {
                 String kind = "";
-                Creature c = WorldManager.getCreatures().get(s);
-                if (c instanceof Animal) kind = "," + ((Animal) c).getKindOfAnimal().name();
-                writer.write(s + "," + c.getClass().toString().replace("class Entities.", "") + "," + "\"" + c.getName() + "\"" +
-                        "," + c.getLocation().getX() + "," + c.getLocation().getY() + "," + c.getLocation().getBuilding() + "," + "\"" + c.getLocation().getName() + "\"" + kind + "\r\n");
+                Human c = WorldManager.getHumans().get(s);
+                writer.write(s + "," + c.getClass().toString().replace("class Entities.", "") + ",\"" + c.getName() + "\"," +
+                        c.getLocation().getX() + "," + c.getLocation().getY() + "\r\n");
             }
             System.out.println("Запись в файл успешна");
             writer.close();
@@ -124,9 +125,8 @@ public class MyReadWriter {
             Scanner scanner = new Scanner(System.in);
             String command = scanner.nextLine();
             String[] commands = command.split("\\s+");
-            commands[0] = commands[0].toUpperCase();
             switch(commands[0]) {
-                case "INSERT":
+                case "insert":
                     if (commands.length < 3) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
@@ -136,12 +136,12 @@ public class MyReadWriter {
                                 for (int i = 2; i < commands.length; i++) {
                                     json = json + commands[i];
                                 }
-                            WorldManager.addNewCreature(commands[1], startParsing(scanner,json));
+                            WorldManager.addNewHuman(commands[1], startParsing(scanner,json));
                             System.out.println("Элемент успешно добавлен в коллекцию.");
                         } else System.out.println("Ошибка парсинга");
                     }
                     break;
-                case "REMOVE_GREATER":
+                case "remove_greater":
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
@@ -152,13 +152,13 @@ public class MyReadWriter {
                         WorldManager.removeGreater(startParsing(scanner, json));
                     }
                     break;
-                case "SHOW":
-                    WorldManager.showCreatures();
+                case "show":
+                    WorldManager.showHumans();
                     break;
-                case "CLEAR":
+                case "clear":
                     WorldManager.clear();
                     break;
-                case "IMPORT":
+                case "import":
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
@@ -168,20 +168,23 @@ public class MyReadWriter {
                         System.out.println((readFile(path)) ? "Файл успешно прочитан" : "Ошибка чтения файла");
                     }
                     break;
-                case "INFO":
+                case "info":
                     WorldManager.getInfo();
                     break;
-                case "HELP":
+                case "help":
                     help();
                     break;
-                case "REMOVE":
+                case "remove":
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
-                        WorldManager.removeCreature(commands[1]);
+                        WorldManager.removeHuman(commands[1]);
                     }
                     break;
-                case "STOP":
+                case "send":
+                    Server.sendToAllClients(command.replace("send ", ""), null);
+                    break;
+                case "stop":
                     scanner.close();
                     return true;
                 default:
@@ -212,7 +215,7 @@ public class MyReadWriter {
      * @param scanner сканер для считывания ввода.
      * @return возвращает спарсенный объект.
      */
-    private static Creature startParsing(Scanner scanner, String iJson) {
+    private static Human startParsing(Scanner scanner, String iJson) {
         boolean flag = true;
         String json = ""+iJson;
         if (((json.length()- json.replaceAll("\\{","").length()) - (json.length()- json.replaceAll("\\}","").length()))<1) flag = false;
@@ -224,12 +227,8 @@ public class MyReadWriter {
         try {
             return gson.fromJson(json, Human.class);
         } catch (Exception e) {
-            try {
-                return gson.fromJson(json, Animal.class);
-            } catch (Exception ex) {
-                return gson.fromJson(json, Shoggot.class);
-            }
         }
+        return null;
     }
 
     /**
@@ -248,24 +247,19 @@ public class MyReadWriter {
      * @param csv - строка следуюещего формата [key],[type],[location],[name]
      * @return Возвращает уже спарсенный элемент.
      */
-    private static Creature pasrseCSV(String csv) {
+    private static Human pasrseCSV(String csv) {
 
         String param[] = csv.split(",");
-        if (!(param.length == 7 || param.length == 8)) return null;
-        int k = 6;
-        if (param.length == 8) k = 7;
-        param[k] = param[k].replace("\r", "");
-        param[6] = findString(param[6]);
+        if (!(param.length == 5)) return null;
+        param[4] = param[4].replace("\r", "");
         param[2] = findString(param[2]);
         param[1] = param[1].toUpperCase();
-        if (param[1].equals("HUMAN") || param[1].equals("ANIMAL") || param[1].equals("SHOGGOT"))
+        if (param[1].equals("SPY") || param[1].equals("MERC"))
             switch(param[1]) {
-                case "ANIMAL":
-                    return new Animal(param[2], Animals.valueOf(param[k].toUpperCase()), new Locations(Double.valueOf(param[3]), Double.valueOf(param[4]),param[6], Boolean.valueOf(param[5])));
-                case "HUMAN":
-                    return new Human(param[2], new Locations(Double.valueOf(param[3]), Double.valueOf(param[4]),param[6], Boolean.valueOf(param[5])));
-                case "SHOGGOT":
-                    return new Shoggot(param[2], new Locations(Double.valueOf(param[3]), Double.valueOf(param[4]),param[6], Boolean.valueOf(param[5])));
+                case "SPY":
+                    return new Spy(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])));
+                case "MERC":
+                    return new Merc(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])));
             }
         return null;
     }
