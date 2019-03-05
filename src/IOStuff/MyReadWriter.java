@@ -54,8 +54,7 @@ import java.util.Scanner;
  */
 public class MyReadWriter {
 
-    private static GsonBuilder builder = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize());
-    private static Gson gson = builder.create();
+    private static final Gson gson = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize()).create();
     private static boolean canRead = false;
 
     private MyReadWriter() {}
@@ -182,7 +181,12 @@ public class MyReadWriter {
                     }
                     break;
                 case "send":
-                    Server.sendToAllClients(command.replace("send ", ""), null);
+                    if (commands.length < 2) {
+                        System.out.println("Отсутсвуют аргументы команды.");
+                    } else {
+                        Server.sendToAllClients(command.replace("send ", ""), null);
+                        System.out.println("Сообщение успешно отправлено.");
+                    }
                     break;
                 case "stop":
                     scanner.close();
@@ -271,20 +275,15 @@ public class MyReadWriter {
                 "insert {string} {element} - добавить новый элемент с заданным ключом, {element} должен быть в формате json,а String - строка без пробельных символов\n" +
                 "Пример:\n" +
                 "insert ExampleKey {\n" +
-                "   \"type\": \"Animal\",\n" +
-                "   \"kindOfAnimal\":\"DOG\",\n" +
-                "   \"name\":\"Эффа\",\n" +
+                "   \"side\": \"Spy\",\n" +
+                "   \"name\":\"Шпиён\",\n" +
                 "   \"loc\":\n" +
                 "       {\n" +
                 "       \"x\":10.0,\n" +
                 "       \"y\":30.0,\n" +
-                "       \"name\":\"Будка\",\n" +
-                "       \"isBuilding\":true\n" +
                 "       }\n" +
                 "}\n" +
-                "Поле kindOfAnimal может принимать следующие значения: DOG, PIG, DUCK, BEAR, CAT, WOLF, SHEEP, PENGUIN\n" +
-                "Поле isBuilding может быть не указано, тогда будет считаться, что его значение - false\n"+
-                "Вместо Animal могут быть два других типа: Human и Shoggot;\n\n" +
+                "Вместо Spy может быть Merc\n\n" +
                 "remove_greater {element} - удалить из коллекции все элементы длина поля Name которых, больше длины поля Name у {element}.\n\n" +
                 "show - вывести список элементов коллекции.\n\n" +
                 "help - помощь.\n\n" +

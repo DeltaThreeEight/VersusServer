@@ -89,4 +89,9 @@ public abstract class Human implements Moveable, Comparable<Human>{
         return Objects.hash(name, loc, hp);
     }
 
+    public double distance(Moveable moveable) {
+        return Math.sqrt(Math.pow(getLocation().getY()-moveable.getLocation().getY(), 2.0)
+                + Math.pow((getLocation().getX()-moveable.getLocation().getX()), 2.0));
+    }
+
 }

@@ -7,7 +7,7 @@ import java.util.*;
 public class WorldManager {
 
 
-    private static Map<String, Human> humans = Collections.synchronizedMap(new HashMap<String, Human>());
+    private static volatile Map<String, Human> humans = Collections.synchronizedMap(new HashMap<>());
     private static Date dateInit = new Date();
 
     private WorldManager() {
@@ -54,7 +54,7 @@ public class WorldManager {
         String showHumans = "";
         showHumans = showHumans + "Список элементов коллекции:\n";
         for (String c : humans.keySet()) {
-            showHumans = showHumans + c.toString() + "\n";
+            showHumans = showHumans + c.toString() + " " + humans.get(c) + " " + humans.get(c).getClass().toString().replace("class Entities.", "") + " " + humans.get(c).getLocation().getName() + "\n";
         }
         System.out.println(showHumans);
     }

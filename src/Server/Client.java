@@ -7,7 +7,7 @@ import java.io.*;
 import java.net.Socket;
 
 public class Client {
-    private static int id = 0;
+    private static volatile int id = 0;
     private String name;
     private BufferedReader reader;
     private DataOutputStream writer;
@@ -15,6 +15,7 @@ public class Client {
     private Thread thread;
 
     private Human human;
+    private String key;
 
     public Client(Socket socket) {
         name = ""+id++;
@@ -31,7 +32,7 @@ public class Client {
 
     public void closeConnection() {
         try {
-            sendMessage(cActions.SEND, "\nСервер закрывает соединение...\n");
+            sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
             writer.close();
             client.close();
         } catch (IOException e) {
@@ -43,9 +44,18 @@ public class Client {
         thread.start();
     }
 
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
     private void servClient() {
 
         String command = "";
+        Server.loadPLRS(this);
 
         ClientCommandHandler cmdHandler = new ClientCommandHandler(this);
 
@@ -53,7 +63,7 @@ public class Client {
 
         try {
             while (!command.equals("exit")) {
-                sendMessage(cActions.SEND, "Введите комнаты: ");
+                sendMessage(cActions.SEND, "Введите команду\n");
                 command = readLine();
                 System.out.print("Клиент " +name+": " + command + "\n");
                 if (command == null) break;
@@ -61,10 +71,14 @@ public class Client {
             }
         } catch (IOException e) {
             System.out.println("Потеряно соединение с клиентом " +name+".");
+            if (getKey() != null) Server.remPlayer(getKey());
+            Server.getClients().remove(this);
             return;
         }
 
-        System.out.println("\nКлиент "+name+" отключился.");
+        if (getKey() != null) Server.remPlayer(getKey());
+        Server.getClients().remove(this);
+        System.out.println("Клиент "+name+" отключился.");
     }
 
     public void sendMessage(cActions action, String str) {

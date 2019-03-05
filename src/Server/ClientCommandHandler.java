@@ -29,24 +29,37 @@ public class ClientCommandHandler {
                 if (commands.length < 2)
                     sendMessage(cActions.SEND,"Отсутсвуют аргументы\n");
                 else {
-                    Human sel = WorldManager.getHuman(commands[1]);
-                    if (sel != null) {
-                        if (client.getHuman() != null) Server.remPlayer(client.getHuman());
-                        client.setHuman(sel);
-                        sendMessage(cActions.SEND,"Выбран персонаж: " + sel.getName()+"\n");
-                        sendMessage(cActions.DESERIALIZE, Server.gson.toJson(sel, Human.class));
-                        Server.addPlayer(client, sel);
-                        client.setName(sel.getName());
-                    } else
-                        sendMessage(cActions.SEND,"Персонаж не найден\n");
+                    Boolean flag = true;
+                    for (Client c : Server.getClients()) {
+                        if (commands[1].equals(c.getKey())) {
+                            if (c != client) sendMessage(cActions.SEND,"Персонаж уже выбран другим игроком\n");
+                            else sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа\n");
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        Human sel = WorldManager.getHuman(commands[1]);
+                        if (sel != null) {
+                            if (client.getKey() != null) Server.remPlayer(client.getKey());
+                            client.setKey(commands[1]);
+                            client.setHuman(sel);
+                            sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
+                            sendMessage(cActions.DESERIALIZE, Server.gson.toJson(sel, Human.class));
+                            Server.addPlayer(client, commands[1], sel);
+                            client.setName(sel.getName());
+                        } else
+                            sendMessage(cActions.SEND, "Персонаж не найден\n");
+                    }
                 }
                 break;
             case "createnew":
-                if (client.getHuman() != null) Server.remPlayer(client.getHuman());
+                if (client.getKey() != null) Server.remPlayer(client.getKey());
                 Human human = Server.gson.fromJson(command.replace(commands[0] + " " + commands[1], ""), Human.class);
                 WorldManager.addNewHuman(commands[1], human);
                 client.setHuman(human);
-                Server.addPlayer(client, human);
+                client.setKey(commands[1]);
+                Server.addPlayer(client, commands[1], human);
                 sendMessage(cActions.SEND,"Выбран персонаж: " + human.getName()+"\n");
                 client.setName(human.getName());
                 break;
@@ -65,7 +78,7 @@ public class ClientCommandHandler {
                                 Human crte = client.getHuman();
                                 crte.move(move);
                                 sendMessage(cActions.SEND,"Перемещение успешно. Новые координаты: "+crte.getLocation().getName()+"\n");
-                                Server.movPlayer(client, crte, move);
+                                Server.movPlayer(client, client.getKey(), move);
                             } catch (NotAliveException e) {
                                 sendMessage(cActions.SEND, e.getMessage());
                             }
@@ -74,8 +87,8 @@ public class ClientCommandHandler {
                 }
                 break;
             case "exit":
-                if (client.getHuman() != null)
-                    Server.remPlayer(client.getHuman());
+                if (client.getKey() != null)
+                    Server.remPlayer(client.getKey());
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");

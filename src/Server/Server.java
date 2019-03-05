@@ -11,12 +11,13 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Server extends Thread {
-    static GsonBuilder builder = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize());
-    static Gson gson = builder.create();
+    static final Gson gson = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize()).create();
     private ServerSocket serverSocket = null;
-    private static ArrayList<Client> clients = new ArrayList<Client>();
+    private static volatile List<Client> clients = Collections.synchronizedList(new ArrayList<Client>());
 
     public void run() {
         System.out.println("Попытка запустить сервер...");
@@ -36,36 +37,43 @@ public class Server extends Thread {
         }
     }
 
-    public static void addPlayer(Client client, Human player) {
+    public static void addPlayer(Client client, String key, Human player) {
         for (Client c : clients) {
             if (c != client) {
-                c.sendMessage(cActions.ADDPLAYER, gson.toJson(player, Human.class));
+                c.sendMessage(cActions.ADDPLAYER, key+"^"+gson.toJson(player, Human.class));
             }
         }
     }
 
-    public static void movPlayer(Client client, Human player, Moves move) {
+    public static void movPlayer(Client client, String key, Moves move) {
         for (Client c : clients) {
             if (c != client) {
-                c.sendMessage(cActions.MOVPLAYER, move+"*"+gson.toJson(player, Human.class));
+                c.sendMessage(cActions.MOVPLAYER, move+"^"+key);
             }
         }
     }
 
-    public static void remPlayer(Human player) {
+    public static void loadPLRS(Client client) {
         for (Client c : clients) {
-                c.sendMessage(cActions.REMPLAYER, gson.toJson(player, Human.class));
+            if (c.getKey() != null)
+            client.sendMessage(cActions.LOADPLR, c.getKey()+"^"+gson.toJson(c.getHuman(), Human.class));
+        }
+    }
+
+    public static void remPlayer(String player) {
+        for (Client c : clients) {
+                c.sendMessage(cActions.REMPLAYER, player);
         }
     }
 
     public static void sendToAllClients(String str, Client client) {
         if (client != null) {
             for (Client c : clients) {
-                c.sendMessage(cActions.SEND, "\n" + client.getName() + ": " + str + "     ");
+                c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n");
             }
         }
         else for (Client c : clients) {
-            c.sendMessage(cActions.SEND, "\nСообщение от сервера -> "+ str + "     ");
+            c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n");
         }
     }
 
@@ -75,7 +83,7 @@ public class Server extends Thread {
         System.exit(0);
     }
 
-    public static ArrayList<Client> getClients() {
+    public static List<Client> getClients() {
         return clients;
     }
 

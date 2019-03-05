@@ -5,5 +5,6 @@ public enum cActions {
     SEND,
     ADDPLAYER,
     MOVPLAYER,
+    LOADPLR,
     REMPLAYER;
 }
