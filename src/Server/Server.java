@@ -15,14 +15,13 @@ import java.util.Collections;
 import java.util.List;
 
 public class Server extends Thread {
-    static final Gson gson = new GsonBuilder().registerTypeAdapter(Human.class, new MyDeserialize()).create();
     private ServerSocket serverSocket = null;
     private static volatile List<Client> clients = Collections.synchronizedList(new ArrayList<Client>());
 
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
-            serverSocket = new ServerSocket(8900,8900, InetAddress.getByName("26.17.59.67"));
+            serverSocket = new ServerSocket(666,666, InetAddress.getByName(null));
             System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
             System.out.println("Порт: "+serverSocket.getLocalPort());
         } catch (IOException e) {
@@ -40,7 +39,8 @@ public class Server extends Thread {
     public static void addPlayer(Client client, String key, Human player) {
         for (Client c : clients) {
             if (c != client) {
-                c.sendMessage(cActions.ADDPLAYER, key+"^"+gson.toJson(player, Human.class));
+                c.sendMessage(cActions.ADDPLAYER, key+"^");
+                c.sendObject(player);
             }
         }
     }
@@ -55,8 +55,11 @@ public class Server extends Thread {
 
     public static void loadPLRS(Client client) {
         for (Client c : clients) {
-            if (c.getKey() != null)
-            client.sendMessage(cActions.LOADPLR, c.getKey()+"^"+gson.toJson(c.getHuman(), Human.class));
+            if (c.getKey() != null) {
+                client.sendMessage(cActions.LOADPLR, c.getKey() + "^");
+                client.sendObject(c.getHuman());
+            }
+
         }
     }
 
@@ -89,7 +92,7 @@ public class Server extends Thread {
 
     private Socket waitConnection() {
         try {
-            Socket client = null;
+            Socket client;
             System.out.println("Ждём нового соединения...");
             client = serverSocket.accept();
             System.out.println("Подключение успешно.");

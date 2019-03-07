@@ -10,8 +10,7 @@ public class WorldManager {
     private static volatile Map<String, Human> humans = Collections.synchronizedMap(new HashMap<>());
     private static Date dateInit = new Date();
 
-    private WorldManager() {
-    }
+    private WorldManager() {}
 
     /**
      * Удаляет элемент коллекции по его ключу.

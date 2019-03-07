@@ -9,8 +9,8 @@ import java.net.Socket;
 public class Client {
     private static volatile int id = 0;
     private String name;
-    private BufferedReader reader;
-    private DataOutputStream writer;
+    private ObjectInputStream reader;
+    private ObjectOutputStream writer;
     private Socket client;
     private Thread thread;
 
@@ -23,8 +23,8 @@ public class Client {
         try {
             InputStream inputClientStream = client.getInputStream();
             OutputStream outClientStream = client.getOutputStream();
-            reader = new BufferedReader(new InputStreamReader(inputClientStream));
-            writer = new DataOutputStream(outClientStream);
+            reader = new ObjectInputStream(inputClientStream);
+            writer = new ObjectOutputStream(outClientStream);
         } catch (IOException e) {
             System.out.println("Невозможно получить поток ввода!");
         }
@@ -53,37 +53,52 @@ public class Client {
     }
 
     private void servClient() {
-
-        String command = "";
-        Server.loadPLRS(this);
-
-        ClientCommandHandler cmdHandler = new ClientCommandHandler(this);
-
-        cmdHandler.executeCommand("help");
-
         try {
-            while (!command.equals("exit")) {
-                sendMessage(cActions.SEND, "Введите команду\n");
-                command = readLine();
-                System.out.print("Клиент " +name+": " + command + "\n");
-                if (command == null) break;
-                cmdHandler.executeCommand(command);
+            String command = "";
+            Server.loadPLRS(this);
+
+            ClientCommandHandler cmdHandler = new ClientCommandHandler(this);
+
+            cmdHandler.executeCommand("help");
+
+            try {
+                while (!command.equals("exit")) {
+                    sendMessage(cActions.SEND, "Введите команду\n");
+                    command = readLine();
+                    System.out.print("Клиент " + name + ": " + command + "\n");
+                    if (command == null) break;
+                    cmdHandler.executeCommand(command);
+                }
+            } catch (IOException e) {
+                System.out.println("Потеряно соединение с клиентом " + name + ".");
+                if (getKey() != null) Server.remPlayer(getKey());
+                Server.getClients().remove(this);
+                return;
             }
-        } catch (IOException e) {
-            System.out.println("Потеряно соединение с клиентом " +name+".");
+
             if (getKey() != null) Server.remPlayer(getKey());
             Server.getClients().remove(this);
-            return;
+            System.out.println("Клиент " + name + " отключился.");
+        } catch (Exception e) {
+            System.out.println("Потеряно соединение с клиентом" + name);
+            if (getKey() != null) Server.remPlayer(getKey());
+            Server.getClients().remove(this);
         }
-
-        if (getKey() != null) Server.remPlayer(getKey());
-        Server.getClients().remove(this);
-        System.out.println("Клиент "+name+" отключился.");
     }
 
     public void sendMessage(cActions action, String str) {
         try {
             writer.writeUTF(action + "^" + str);
+            writer.flush();
+        } catch (IOException e) {
+
+        }
+    }
+
+    public void sendObject(Object obj) {
+        try {
+            writer.writeObject(obj);
+            writer.flush();
         } catch (IOException e) {
 
         }
@@ -98,7 +113,16 @@ public class Client {
     }
 
     public String readLine() throws IOException{
-        return reader.readLine();
+        return reader.readUTF();
+    }
+
+    public Object readObject() {
+        try {
+            return reader.readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public void setHuman(Human human) {

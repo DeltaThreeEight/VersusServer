@@ -3,15 +3,16 @@ package Entities;
 import Exceptions.NotAliveException;
 import World.Location;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public abstract class Human implements Moveable, Comparable<Human>{
+public abstract class Human implements Moveable, Comparable<Human>, Serializable {
 
     private String name;
     private Location loc;
-    transient private int hp = 100;
-    transient private Moves lastMove = Moves.BACK;
-    transient private double speedModifier = 1.0;
+    private int hp = 100;
+    private Moves lastMove = Moves.BACK;
+    private double speedModifier = 1.0;
 
     public Human(String iName) {
         this.name = iName;

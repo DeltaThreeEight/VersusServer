@@ -45,7 +45,8 @@ public class ClientCommandHandler {
                             client.setKey(commands[1]);
                             client.setHuman(sel);
                             sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
-                            sendMessage(cActions.DESERIALIZE, Server.gson.toJson(sel, Human.class));
+                            sendMessage(cActions.DESERIALIZE, "");
+                            client.sendObject(sel);
                             Server.addPlayer(client, commands[1], sel);
                             client.setName(sel.getName());
                         } else
@@ -54,14 +55,20 @@ public class ClientCommandHandler {
                 }
                 break;
             case "createnew":
-                if (client.getKey() != null) Server.remPlayer(client.getKey());
-                Human human = Server.gson.fromJson(command.replace(commands[0] + " " + commands[1], ""), Human.class);
-                WorldManager.addNewHuman(commands[1], human);
-                client.setHuman(human);
-                client.setKey(commands[1]);
-                Server.addPlayer(client, commands[1], human);
-                sendMessage(cActions.SEND,"Выбран персонаж: " + human.getName()+"\n");
-                client.setName(human.getName());
+                if (WorldManager.getHuman(commands[1]) == null) {
+                    if (client.getKey() != null) Server.remPlayer(client.getKey());
+                    Human human = (Human) client.readObject();
+                    WorldManager.addNewHuman(commands[1], human);
+                    client.setHuman(human);
+                    client.setKey(commands[1]);
+                    Server.addPlayer(client, commands[1], human);
+                    sendMessage(cActions.SEND, "Выбран персонаж: " + human.getName() + "\n");
+                    client.sendMessage(cActions.DESERIALIZE, "");
+                    client.sendObject(human);
+                    client.setName(human.getName());
+                } else {
+                    client.readObject();
+                    sendMessage(cActions.SEND, "Выбранный идентификатор уже занят.\n");}
                 break;
             case "move":
                 if (commands.length < 2)
@@ -72,6 +79,7 @@ public class ClientCommandHandler {
                         try {
                             move = Moves.valueOf(commands[1].toUpperCase());
                         } catch (Exception e) {
+                            e.printStackTrace();
                         }
                         if (move != null) {
                             try {
@@ -92,15 +100,6 @@ public class ClientCommandHandler {
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");
-        }
-    }
-
-    public String readLine() {
-        try {
-            return client.readLine();
-        } catch (IOException e) {
-            System.out.println("Соединение с клиентом потеряно.");
-            return null;
         }
     }
 
