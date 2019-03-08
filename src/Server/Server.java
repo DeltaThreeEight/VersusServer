@@ -6,15 +6,12 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
-    private static volatile List<Client> clients = Collections.synchronizedList(new ArrayList<Client>());
+    private static volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
 
     public void run() {
         System.out.println("Попытка запустить сервер...");

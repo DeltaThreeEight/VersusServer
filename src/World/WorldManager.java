@@ -3,12 +3,12 @@ package World;
 import Entities.Human;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WorldManager {
 
 
-    private static volatile Map<String, Human> humans = Collections.synchronizedMap(new HashMap<>());
+    private static volatile Map<String, Human> humans = new ConcurrentHashMap<>();
     private static Date dateInit = new Date();
 
     private WorldManager() {}
