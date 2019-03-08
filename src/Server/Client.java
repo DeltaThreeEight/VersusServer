@@ -95,7 +95,17 @@ public class Client {
         }
     }
 
-    public void sendObject(Object obj) {
+    public void sendMessage(cActions action, String str, Object human) {
+        try {
+            writer.writeUTF(action + "^" + str);
+            writer.flush();
+            sendObject(human);
+        } catch (IOException e) {
+
+        }
+    }
+
+    private void sendObject(Object obj) {
         try {
             writer.writeObject(obj);
             writer.flush();

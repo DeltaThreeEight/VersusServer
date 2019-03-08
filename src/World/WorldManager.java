@@ -3,6 +3,7 @@ package World;
 import Entities.Human;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WorldManager {
 
@@ -50,12 +51,8 @@ public class WorldManager {
      * Вывести в стандатный поток вывода все ключи коллекции.
      */
     public static void showHumans() {
-        String showHumans = "";
-        showHumans = showHumans + "Список элементов коллекции:\n";
-        for (String c : humans.keySet()) {
-            showHumans = showHumans + c.toString() + " " + humans.get(c) + " " + humans.get(c).getClass().toString().replace("class Entities.", "") + " " + humans.get(c).getLocation().getName() + "\n";
-        }
-        System.out.println(showHumans);
+        System.out.println("Список элементов коллекции: ");
+        humans.keySet().stream().forEach(System.out::println);
     }
 
     /**
@@ -80,7 +77,10 @@ public class WorldManager {
      * @param human Любой наследник Creature.
      */
     public static void removeGreater(Human human) {
-        humans.entrySet().removeIf(e -> human.getName().length() < humans.get(e.getKey()).getName().length());
+        humans.keySet()
+                .stream()
+                .filter(e -> human.getName().length() < humans.get(e).getName().length())
+                .forEach(humans::remove);
         System.out.println("Элементы превышающие \""+human.getName()+"\" удалены из коллекции");
     }
 

@@ -4,7 +4,6 @@ import Entities.Human;
 import Entities.Moves;
 import Exceptions.NotAliveException;
 import World.WorldManager;
-import java.io.IOException;
 
 public class ClientCommandHandler {
 
@@ -45,8 +44,7 @@ public class ClientCommandHandler {
                             client.setKey(commands[1]);
                             client.setHuman(sel);
                             sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
-                            sendMessage(cActions.DESERIALIZE, "");
-                            client.sendObject(sel);
+                            sendMessage(cActions.DESERIALIZE, "", sel);
                             Server.addPlayer(client, commands[1], sel);
                             client.setName(sel.getName());
                         } else
@@ -63,8 +61,7 @@ public class ClientCommandHandler {
                     client.setKey(commands[1]);
                     Server.addPlayer(client, commands[1], human);
                     sendMessage(cActions.SEND, "Выбран персонаж: " + human.getName() + "\n");
-                    client.sendMessage(cActions.DESERIALIZE, "");
-                    client.sendObject(human);
+                    client.sendMessage(cActions.DESERIALIZE, "", human);
                     client.setName(human.getName());
                 } else {
                     client.readObject();
@@ -105,6 +102,10 @@ public class ClientCommandHandler {
 
     public void sendMessage(cActions action, String str) {
         client.sendMessage(action, str);
+    }
+
+    public void sendMessage(cActions action, String str, Object obj) {
+        client.sendMessage(action, str, obj);
     }
 
     public void helpClient() {

@@ -2,10 +2,6 @@ package Server;
 
 import Entities.Human;
 import Entities.Moves;
-import IOStuff.MyDeserialize;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -13,6 +9,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
@@ -37,52 +35,33 @@ public class Server extends Thread {
     }
 
     public static void addPlayer(Client client, String key, Human player) {
-        for (Client c : clients) {
-            if (c != client) {
-                c.sendMessage(cActions.ADDPLAYER, key+"^");
-                c.sendObject(player);
-            }
-        }
+        clients.stream().filter(c -> c != client)
+                .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
     }
 
     public static void movPlayer(Client client, String key, Moves move) {
-        for (Client c : clients) {
-            if (c != client) {
-                c.sendMessage(cActions.MOVPLAYER, move+"^"+key);
-            }
-        }
+        clients.stream().filter(c -> c != client)
+                .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
     }
 
     public static void loadPLRS(Client client) {
-        for (Client c : clients) {
-            if (c.getKey() != null) {
-                client.sendMessage(cActions.LOADPLR, c.getKey() + "^");
-                client.sendObject(c.getHuman());
-            }
-
-        }
+        clients.stream().filter(c -> c.getKey() != null)
+                .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
     }
 
     public static void remPlayer(String player) {
-        for (Client c : clients) {
-                c.sendMessage(cActions.REMPLAYER, player);
-        }
+        clients.stream().forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
     public static void sendToAllClients(String str, Client client) {
-        if (client != null) {
-            for (Client c : clients) {
-                c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n");
-            }
-        }
-        else for (Client c : clients) {
-            c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n");
-        }
+        if (client != null)
+            clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n"));
+        else
+            clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n"));
     }
 
     public void stopServer() {
-        for (Client c : clients)
-            c.closeConnection();
+        clients.stream().forEach(c -> c.closeConnection());
         System.exit(0);
     }
 
