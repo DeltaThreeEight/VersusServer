@@ -9,6 +9,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 
 import java.io.*;
+import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -104,10 +105,9 @@ public class MyReadWriter {
         if (canRead) {
             OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file));
             for (String s : WorldManager.getHumans().keySet()) {
-                String kind = "";
                 Human c = WorldManager.getHumans().get(s);
                 writer.write(s + "," + c.getClass().toString().replace("class Entities.", "") + ",\"" + c.getName() + "\"," +
-                        c.getLocation().getX() + "," + c.getLocation().getY() + "\r\n");
+                        c.getLocation().getX() + "," + c.getLocation().getY() + "," + c.getDate().getTime() + "\r\n");
             }
             System.out.println("Запись в файл успешна");
             writer.close();
@@ -253,16 +253,16 @@ public class MyReadWriter {
     private static Human pasrseCSV(String csv) {
 
         String param[] = csv.split(",");
-        if (!(param.length == 5)) return null;
-        param[4] = param[4].replace("\r", "");
+        if (!(param.length == 6)) return null;
+        param[5] = param[5].replace("\r", "");
         param[2] = findString(param[2]);
         param[1] = param[1].toUpperCase();
         if (param[1].equals("SPY") || param[1].equals("MERC"))
             switch(param[1]) {
                 case "SPY":
-                    return new Spy(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])));
+                    return new Spy(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), new Date(Long.parseLong(param[5])));
                 case "MERC":
-                    return new Merc(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])));
+                    return new Merc(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), new Date(Long.parseLong(param[5])));
             }
         return null;
     }

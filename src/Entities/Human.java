@@ -4,6 +4,7 @@ import Exceptions.NotAliveException;
 import World.Location;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Objects;
 
 public abstract class Human implements Moveable, Comparable<Human>, Serializable {
@@ -12,16 +13,25 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
     private Location loc;
     private int hp = 100;
     private Moves lastMove = Moves.BACK;
+    private Date dateOfCreation;
     private double speedModifier = 1.0;
 
     public Human(String iName) {
         this.name = iName;
         this.loc = new Location(0, 0);
+        dateOfCreation = new Date();
     }
 
     public Human(String iName, Location iLoc) {
         this.name = iName;
         this.loc = iLoc;
+        dateOfCreation = new Date();
+    }
+
+    public Human(String iName, Location iLoc, Date date) {
+        this.name = iName;
+        this.loc = iLoc;
+        dateOfCreation = date;
     }
 
     public void move(Moves move) throws NotAliveException {
@@ -75,6 +85,10 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
         return Objects.equals(name, creature.name) &&
                 Objects.equals(loc, creature.loc) &&
                 Objects.equals(hp, creature.hp);
+    }
+
+    public Date getDate() {
+        return dateOfCreation;
     }
 
     public int compareTo(Human human) {

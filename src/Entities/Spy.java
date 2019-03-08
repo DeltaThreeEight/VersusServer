@@ -2,6 +2,8 @@ package Entities;
 
 import World.Location;
 
+import java.util.Date;
+
 public class Spy extends Human {
 
     {
@@ -15,6 +17,10 @@ public class Spy extends Human {
 
     public Spy(String name, Location location) {
         super(name, location);
+    }
+
+    public Spy(String name, Location location, Date date) {
+        super(name, location, date);
     }
 
     public void shoot() {
