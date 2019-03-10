@@ -5,6 +5,8 @@ import Entities.Human;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.SocketChannel;
 
 public class Client {
     private static volatile int id = 0;
@@ -17,9 +19,9 @@ public class Client {
     private Human human;
     private String key;
 
-    public Client(Socket socket) {
+    public Client(SocketChannel channel) {
         name = ""+id++;
-        client = socket;
+        client = channel.socket();
         try {
             InputStream inputClientStream = client.getInputStream();
             OutputStream outClientStream = client.getOutputStream();
@@ -30,13 +32,8 @@ public class Client {
         }
     }
 
-    public void closeConnection() {
-        try {
-            sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
-            writer.close();
-            client.close();
-        } catch (IOException e) {
-        }
+    public void interrupt() {
+        thread.interrupt();
     }
 
     public void startService() {
@@ -62,13 +59,18 @@ public class Client {
             cmdHandler.executeCommand("help");
 
             try {
-                while (!command.equals("exit")) {
+                while (!command.equals("exit") && !thread.isInterrupted()) {
                     sendMessage(cActions.SEND, "Введите команду\n");
                     command = readLine();
                     System.out.print("Клиент " + name + ": " + command + "\n");
                     if (command == null) break;
                     cmdHandler.executeCommand(command);
                 }
+            } catch (ClosedByInterruptException e) {
+                sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
+                client.close();
+                System.out.println("Соединение с разорвано с клиентом " + name + ".");
+                return;
             } catch (IOException e) {
                 System.out.println("Потеряно соединение с клиентом " + name + ".");
                 if (getKey() != null) Server.remPlayer(getKey());

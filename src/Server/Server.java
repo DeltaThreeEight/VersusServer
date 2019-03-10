@@ -3,29 +3,33 @@ package Server;
 import Entities.Human;
 import Entities.Moves;
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server extends Thread {
-    private ServerSocket serverSocket = null;
+    private ServerSocketChannel serverSocket = null;
     private static volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
 
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
-            serverSocket = new ServerSocket(666,666, InetAddress.getByName(null));
-            System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
-            System.out.println("Порт: "+serverSocket.getLocalPort());
+            serverSocket = ServerSocketChannel.open();
+            serverSocket.bind(new InetSocketAddress(666));
+            System.out.println("Сервер запущен! Адрес: "+serverSocket.socket().getInetAddress());
+            System.out.println("Порт: "+serverSocket.socket().getLocalPort());
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
         }
 
         while (true) {
-            Client client = new Client(waitConnection());
+            SocketChannel clientChannel = waitConnection();
+            if (clientChannel == null) break;
+            Client client = new Client(clientChannel);
             clients.add(client);
             client.startService();
         }
@@ -58,22 +62,31 @@ public class Server extends Thread {
     }
 
     public void stopServer() {
-        clients.stream().forEach(c -> c.closeConnection());
-        System.exit(0);
+        clients.stream().forEach(c -> c.interrupt());
+        this.interrupt();
     }
 
     public static List<Client> getClients() {
         return clients;
     }
 
-    private Socket waitConnection() {
+    private SocketChannel waitConnection() {
         try {
-            Socket client;
+            SocketChannel client;
             System.out.println("Ждём нового соединения...");
             client = serverSocket.accept();
             System.out.println("Подключение успешно.");
             return client;
+        } catch (ClosedByInterruptException e) {
+            System.out.println("Сервер завершает свою работу...");
+            try {
+                serverSocket.close();
+            } catch (IOException ex) {
+                System.out.println("Не удалось закрыть сетевой канал.");
+            }
+            return null;
         } catch (IOException e) {
+            e.printStackTrace();
             System.out.println("Что то не так");
             return null;
         }
