@@ -84,7 +84,8 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
         Human creature = (Human) o;
         return Objects.equals(name, creature.name) &&
                 Objects.equals(loc, creature.loc) &&
-                Objects.equals(hp, creature.hp);
+                Objects.equals(hp, creature.hp) &&
+                Objects.equals(dateOfCreation, dateOfCreation);
     }
 
     public Date getDate() {
@@ -101,7 +102,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, loc, hp);
+        return Objects.hash(name, loc, hp, dateOfCreation);
     }
 
     public double distance(Moveable moveable) {

@@ -25,13 +25,15 @@ public class Main {
                     System.out.println("Файл успешно прочитан");
 
                     Server server = new Server();
-                    server.start();
+                    Thread serverThread = new Thread(server);
+                    serverThread.start();
 
                     boolean exit = false;
                     while (!exit) {
                         exit = MyReadWriter.readCommand(file);
                     }
                     server.stopServer();
+                    serverThread.interrupt();
                 } else
                     System.out.println("Ошибка парсинга. Попробуйте другой файл.");
             } catch (IOException e) {

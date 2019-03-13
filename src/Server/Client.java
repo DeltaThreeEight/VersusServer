@@ -69,7 +69,7 @@ public class Client {
             } catch (ClosedByInterruptException e) {
                 sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
                 client.close();
-                System.out.println("Соединение с разорвано с клиентом " + name + ".");
+                System.out.println("Соединение разорвано с клиентом " + name + ".");
                 return;
             } catch (IOException e) {
                 System.out.println("Потеряно соединение с клиентом " + name + ".");

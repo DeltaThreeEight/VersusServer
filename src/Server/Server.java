@@ -10,16 +10,16 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Server extends Thread {
+public class Server implements Runnable {
     private ServerSocketChannel serverSocket = null;
-    private static volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
+    private static final List<Client> clients = new CopyOnWriteArrayList<Client>();
 
     public void run() {
         System.out.println("Попытка запустить сервер...");
         try {
             serverSocket = ServerSocketChannel.open();
             serverSocket.bind(new InetSocketAddress(666));
-            System.out.println("Сервер запущен! Адрес: "+serverSocket.socket().getInetAddress());
+            //System.out.println("Сервер запущен! Адрес: "+serverSocket.socket().getInetAddress());
             System.out.println("Порт: "+serverSocket.socket().getLocalPort());
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
@@ -63,7 +63,6 @@ public class Server extends Thread {
 
     public void stopServer() {
         clients.stream().forEach(c -> c.interrupt());
-        this.interrupt();
     }
 
     public static List<Client> getClients() {
