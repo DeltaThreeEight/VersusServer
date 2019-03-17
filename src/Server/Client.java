@@ -84,6 +84,9 @@ public class Client {
             if (getKey() != null) Server.remPlayer(getKey());
             Server.getClients().remove(this);
         }
+        finally {
+            Server.remClient(this);
+        }
     }
 
     public void sendMessage(cActions action, String str) {

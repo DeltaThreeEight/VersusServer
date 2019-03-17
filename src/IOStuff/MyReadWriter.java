@@ -129,42 +129,55 @@ public class MyReadWriter {
                     if (commands.length < 3) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
-                        if (!commands[1].equals("")) {
+                        if (Server.hasPlayers())
+                            System.out.println("Операция не поддерживается, когда на сервере есть игроки");
+                        else
+                        {
+                            if (!commands[1].equals("")) {
                             String json = "";
                             if (commands.length > 2)
                                 for (int i = 2; i < commands.length; i++) {
                                     json = json + commands[i];
                                 }
-                            WorldManager.addNewHuman(commands[1], startParsing(scanner,json));
+                            WorldManager.addNewHuman(commands[1], startParsing(scanner, json));
                             System.out.println("Элемент успешно добавлен в коллекцию.");
-                        } else System.out.println("Ошибка парсинга");
+                            } else System.out.println("Ошибка парсинга");
+                        }
                     }
                     break;
                 case "remove_greater":
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
-                        String json = "";
-                        for (int i = 1; i < commands.length; i++) {
-                            json = json + commands[i];
+                        if (Server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
+                        else {
+                            String json = "";
+                            for (int i = 1; i < commands.length; i++) {
+                                json = json + commands[i];
+                            }
+                            WorldManager.removeGreater(startParsing(scanner, json));
                         }
-                        WorldManager.removeGreater(startParsing(scanner, json));
                     }
                     break;
                 case "show":
                     WorldManager.showHumans();
                     break;
                 case "clear":
+                    if (Server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
+                    else
                     WorldManager.clear();
                     break;
                 case "import":
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
-                        String path = "";
-                        path = commands[1];
-                        if (findString(command) != null) path = findString(command);
-                        System.out.println((readFile(path)) ? "Файл успешно прочитан" : "Ошибка чтения файла");
+                        if (Server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
+                        else {
+                            String path = "";
+                            path = commands[1];
+                            if (findString(command) != null) path = findString(command);
+                            System.out.println((readFile(path)) ? "Файл успешно прочитан" : "Ошибка чтения файла");
+                        }
                     }
                     break;
                 case "info":
@@ -177,6 +190,8 @@ public class MyReadWriter {
                     if (commands.length < 2) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
+                        if (Server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
+                        else
                         WorldManager.removeHuman(commands[1]);
                     }
                     break;

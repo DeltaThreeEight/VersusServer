@@ -12,11 +12,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
     private static volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
+    private int port = 8900;
+    private String host = "localhost";
+
+    public Server() {
+    }
+
+    public Server(int port) {
+        this.port = port;
+    }
+
+    public Server(int port, String host) {
+        this.port = port;
+        this.host = host;
+    }
 
     public void run() {
-        System.out.println("Попытка запустить сервер...");
+        System.out.println("Попытка запустить сервер на "+host+":"+port+ "...");
         try {
-            serverSocket = new ServerSocket(666,666, InetAddress.getByName(null));
+            serverSocket = new ServerSocket(port, 100, InetAddress.getByName(host));
             System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
             System.out.println("Порт: "+serverSocket.getLocalPort());
         } catch (IOException e) {
@@ -50,6 +64,10 @@ public class Server extends Thread {
         clients.stream().forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
+    public static void remClient(Client client) {
+        clients.remove(client);
+    }
+
     public static void sendToAllClients(String str, Client client) {
         if (client != null)
             clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n"));
@@ -64,6 +82,10 @@ public class Server extends Thread {
 
     public static List<Client> getClients() {
         return clients;
+    }
+
+    public static boolean hasPlayers() {
+        return !clients.isEmpty();
     }
 
     private Socket waitConnection() {
