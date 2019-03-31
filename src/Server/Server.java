@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
-    private static volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
+    private volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
     private int port = 8900;
     private String host = "localhost";
 
@@ -39,36 +39,36 @@ public class Server extends Thread {
         }
 
         while (true) {
-            Client client = new Client(waitConnection());
+            Client client = new Client(waitConnection(), this);
             clients.add(client);
             client.startService();
         }
     }
 
-    public static void addPlayer(Client client, String key, Human player) {
+    public void addPlayer(Client client, String key, Human player) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
     }
 
-    public static void movPlayer(Client client, String key, Moves move) {
+    public void movPlayer(Client client, String key, Moves move) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
     }
 
-    public static void loadPLRS(Client client) {
+    public void loadPLRS(Client client) {
         clients.stream().filter(c -> c.getKey() != null)
                 .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
     }
 
-    public static void remPlayer(String player) {
+    public void remPlayer(String player) {
         clients.stream().forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
-    public static void remClient(Client client) {
+    public void remClient(Client client) {
         clients.remove(client);
     }
 
-    public static void sendToAllClients(String str, Client client) {
+    public void sendToAllClients(String str, Client client) {
         if (client != null)
             clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n"));
         else
@@ -80,11 +80,11 @@ public class Server extends Thread {
         System.exit(0);
     }
 
-    public static List<Client> getClients() {
+    public List<Client> getClients() {
         return clients;
     }
 
-    public static boolean hasPlayers() {
+    public boolean hasPlayers() {
         return !clients.isEmpty();
     }
 

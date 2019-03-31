@@ -8,9 +8,12 @@ import World.WorldManager;
 public class ClientCommandHandler {
 
     private Client client;
+    private WorldManager wrldMngr = WorldManager.getInstance();
+    private Server server = null;
 
-    public ClientCommandHandler(Client client) {
+    public ClientCommandHandler(Client client, Server server) {
         this.client = client;
+        this.server = server;
     }
 
     public void executeCommand(String command) {
@@ -22,14 +25,14 @@ public class ClientCommandHandler {
                 helpClient();
                 break;
             case "chat":
-                Server.sendToAllClients(command.replace(commands[0]+" ", ""), client);
+                server.sendToAllClients(command.replace(commands[0]+" ", ""), client);
                 break;
             case "select":
                 if (commands.length < 2)
                     sendMessage(cActions.SEND,"Отсутсвуют аргументы\n");
                 else {
                     Boolean flag = true;
-                    for (Client c : Server.getClients()) {
+                    for (Client c : server.getClients()) {
                         if (commands[1].equals(c.getKey())) {
                             if (c != client) sendMessage(cActions.SEND,"Персонаж уже выбран другим игроком\n");
                             else sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа\n");
@@ -38,14 +41,14 @@ public class ClientCommandHandler {
                         }
                     }
                     if (flag) {
-                        Human sel = WorldManager.getHuman(commands[1]);
+                        Human sel = wrldMngr.getHuman(commands[1]);
                         if (sel != null) {
-                            if (client.getKey() != null) Server.remPlayer(client.getKey());
+                            if (client.getKey() != null) server.remPlayer(client.getKey());
                             client.setKey(commands[1]);
                             client.setHuman(sel);
                             sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
                             sendMessage(cActions.DESERIALIZE, "", sel);
-                            Server.addPlayer(client, commands[1], sel);
+                            server.addPlayer(client, commands[1], sel);
                             client.setName(sel.getName());
                         } else
                             sendMessage(cActions.SEND, "Персонаж не найден\n");
@@ -53,13 +56,13 @@ public class ClientCommandHandler {
                 }
                 break;
             case "createnew":
-                if (WorldManager.getHuman(commands[1]) == null) {
-                    if (client.getKey() != null) Server.remPlayer(client.getKey());
+                if (wrldMngr.getHuman(commands[1]) == null) {
+                    if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = (Human) client.readObject();
-                    WorldManager.addNewHuman(commands[1], human);
+                    wrldMngr.addNewHuman(commands[1], human);
                     client.setHuman(human);
                     client.setKey(commands[1]);
-                    Server.addPlayer(client, commands[1], human);
+                    server.addPlayer(client, commands[1], human);
                     sendMessage(cActions.SEND, "Выбран персонаж: " + human.getName() + "\n");
                     client.sendMessage(cActions.DESERIALIZE, "", human);
                     client.setName(human.getName());
@@ -83,7 +86,7 @@ public class ClientCommandHandler {
                                 Human crte = client.getHuman();
                                 crte.move(move);
                                 sendMessage(cActions.SEND,"Перемещение успешно. Новые координаты: "+crte.getLocation().getName()+"\n");
-                                Server.movPlayer(client, client.getKey(), move);
+                                server.movPlayer(client, client.getKey(), move);
                             } catch (NotAliveException e) {
                                 sendMessage(cActions.SEND, e.getMessage());
                             }
@@ -93,7 +96,7 @@ public class ClientCommandHandler {
                 break;
             case "exit":
                 if (client.getKey() != null)
-                    Server.remPlayer(client.getKey());
+                    server.remPlayer(client.getKey());
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");

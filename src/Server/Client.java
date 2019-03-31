@@ -13,13 +13,15 @@ public class Client {
     private ObjectOutputStream writer;
     private Socket client;
     private Thread thread;
+    private Server server = null;
 
     private Human human;
     private String key;
 
-    public Client(Socket socket) {
+    public Client(Socket socket, Server server) {
         name = ""+id++;
         client = socket;
+        this.server = server;
         try {
             InputStream inputClientStream = client.getInputStream();
             OutputStream outClientStream = client.getOutputStream();
@@ -55,9 +57,9 @@ public class Client {
     private void servClient() {
         try {
             String command = "";
-            Server.loadPLRS(this);
+            server.loadPLRS(this);
 
-            ClientCommandHandler cmdHandler = new ClientCommandHandler(this);
+            ClientCommandHandler cmdHandler = new ClientCommandHandler(this , server);
 
             cmdHandler.executeCommand("help");
 
@@ -71,21 +73,21 @@ public class Client {
                 }
             } catch (IOException e) {
                 System.out.println("Потеряно соединение с клиентом " + name + ".");
-                if (getKey() != null) Server.remPlayer(getKey());
-                Server.getClients().remove(this);
+                if (getKey() != null) server.remPlayer(getKey());
+                server.getClients().remove(this);
                 return;
             }
 
-            if (getKey() != null) Server.remPlayer(getKey());
-            Server.getClients().remove(this);
+            if (getKey() != null) server.remPlayer(getKey());
+            server.getClients().remove(this);
             System.out.println("Клиент " + name + " отключился.");
         } catch (Exception e) {
             System.out.println("Потеряно соединение с клиентом" + name);
-            if (getKey() != null) Server.remPlayer(getKey());
-            Server.getClients().remove(this);
+            if (getKey() != null) server.remPlayer(getKey());
+            server.getClients().remove(this);
         }
         finally {
-            Server.remClient(this);
+            server.remClient(this);
         }
     }
 

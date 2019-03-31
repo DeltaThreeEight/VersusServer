@@ -8,8 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WorldManager {
 
 
-    private static volatile Map<String, Human> humans = new ConcurrentHashMap<>();
-    private static Date dateInit = new Date();
+    private volatile Map<String, Human> humans = new ConcurrentHashMap<>();
+    private Date dateInit = new Date();
+    private static WorldManager wrld = null;
 
     private WorldManager() {}
 
@@ -18,7 +19,7 @@ public class WorldManager {
      * @param key - Название(ключ) элемента коллекции.
      * @return Возвращает true, если элемент удалён, false - если нет.
      */
-    public static boolean removeHuman(String key) {
+    public  boolean removeHuman(String key) {
         if (humans.remove(key) != null) {
             System.out.println("Элемент успешно удалён");
             return true;
@@ -34,7 +35,7 @@ public class WorldManager {
      * @param key - Название(ключ) элемента коллекции.
      * @param iCreature - Любой наследник Creature.
      */
-    public static void addNewHuman(String key, Human iCreature) {
+    public void addNewHuman(String key, Human iCreature) {
         humans.put(key, iCreature);
     }
 
@@ -43,14 +44,14 @@ public class WorldManager {
      * @param creature - Ключ элемента коллекции
      * @return Возвращает какого-либо наследника Creature, если такой был найден по ключу.
      */
-    public static Human getHuman(String creature) {
+    public Human getHuman(String creature) {
         return humans.get(creature);
     }
 
     /**
      * Вывести в стандатный поток вывода все ключи коллекции.
      */
-    public static void showHumans() {
+    public void showHumans() {
         System.out.println("Список элементов коллекции: ");
         humans.keySet().stream().forEach(System.out::println);
     }
@@ -58,7 +59,7 @@ public class WorldManager {
     /**
      * Вывести в стандартый поток вывода информацию о коллекции...
      */
-    public static void getInfo() {
+    public void getInfo() {
         System.out.println("Дата инициализации: " +dateInit+"\n"
         + "Тип: HashMap\n"
         + "Количество элементов: " + humans.size());
@@ -67,16 +68,23 @@ public class WorldManager {
     /**
      * Удалить из коллекции все объекты(вообще все).
      */
-    public static void clear() {
+    public void clear() {
         humans.clear();
         System.out.println("Коллекция успешно очищена");
+    }
+
+    public static WorldManager getInstance() {
+        if (wrld == null) {
+            wrld = new WorldManager();
+            return wrld;
+        } else return wrld;
     }
 
     /**
      * Удаляет все элементы из коллекции длина имени которых больше, чем длина имени элемента указанного в качестве параметра.
      * @param human Любой наследник Creature.
      */
-    public static void removeGreater(Human human) {
+    public void removeGreater(Human human) {
         humans.keySet()
                 .stream()
                 .filter(e -> human.getName().length() < humans.get(e).getName().length())
@@ -87,7 +95,7 @@ public class WorldManager {
     /**
      * Возвращает коллекцию в текущем состоянии.
      */
-    public static Map<String, Human> getHumans() {
+    public Map<String, Human> getHumans() {
         return humans;
     }
 
