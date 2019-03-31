@@ -1,8 +1,7 @@
 package IOStuff;
 
 import Entities.*;
-import Server.Client;
-import Server.Server;
+import Server.*;
 import World.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -221,6 +220,8 @@ public class MyReadWriter {
                     break;
                 case "info":
                     wrldMngr.getInfo();
+                    break;
+                case "test":
                     break;
                 case "help":
                     help();

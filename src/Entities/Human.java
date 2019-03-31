@@ -74,7 +74,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
 
     @Override
     public String toString() {
-        return name;
+        return name + getClass().toString().replace("class Entities.", " ") + " "+ loc;
     }
 
     @Override

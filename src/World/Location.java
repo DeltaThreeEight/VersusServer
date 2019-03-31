@@ -28,4 +28,8 @@ public class Location implements Serializable {
         return y;
     }
 
+    public String toString() {
+        return x + " " + y;
+    }
+
 }

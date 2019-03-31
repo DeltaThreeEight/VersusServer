@@ -21,6 +21,23 @@ public class ClientCommandHandler {
         if (commands.length == 0) return;
 
         switch(commands[0]) {
+            case "login":
+                if (commands.length > 2) client.setIsAuth(server.getDBC().executeLogin(commands[1], commands[2]));
+                else client.sendMessage(cActions.SEND, "Авторизация не удалась\n");
+                if (client.getIsAuth()) {
+                    client.sendMessage(cActions.SEND, "Авторизация успешна\n");
+                    client.sendMessage(cActions.AUTH, null);
+                }
+                else client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
+                break;
+            case "register":
+                if (commands.length > 3) client.setIsAuth(server.getDBC().executeRegister(commands[1], commands[2], commands[3]));
+                else client.sendMessage(cActions.SEND, "Регистрация не удалась\n");
+                if (client.getIsAuth()) {
+                    client.sendMessage(cActions.SEND, "Регистрация успешна\n");
+                    client.sendMessage(cActions.AUTH, null);
+                } else client.sendMessage(cActions.SEND, "Пользователь с таким именем/почтой уже есть\n");
+                break;
             case "help":
                 helpClient();
                 break;

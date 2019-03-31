@@ -2,6 +2,8 @@ package Server;
 
 import Entities.Human;
 import Entities.Moves;
+
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -14,6 +16,7 @@ public class Server extends Thread {
     private volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
     private int port = 8900;
     private String host = "localhost";
+    private DataBaseConnection dataBaseConnection = null;
 
     public Server() {
     }
@@ -33,6 +36,10 @@ public class Server extends Thread {
             serverSocket = new ServerSocket(port, 100, InetAddress.getByName(host));
             System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
             System.out.println("Порт: "+serverSocket.getLocalPort());
+            System.out.println("\nИнициализация соединения с БД...");
+            dataBaseConnection = new DataBaseConnection();
+            System.out.println("Загрузка персонажей...");
+            System.out.println("Загружено " + dataBaseConnection.loadPersons() + " персонажей.");
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
@@ -48,6 +55,10 @@ public class Server extends Thread {
     public void addPlayer(Client client, String key, Human player) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
+    }
+
+    public DataBaseConnection getDataBaseConnection() {
+        return dataBaseConnection;
     }
 
     public void movPlayer(Client client, String key, Moves move) {
@@ -86,6 +97,10 @@ public class Server extends Thread {
 
     public boolean hasPlayers() {
         return !clients.isEmpty();
+    }
+
+    public DataBaseConnection getDBC() {
+        return dataBaseConnection;
     }
 
     private Socket waitConnection() {

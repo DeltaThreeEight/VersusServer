@@ -6,5 +6,6 @@ public enum cActions {
     ADDPLAYER,
     MOVPLAYER,
     LOADPLR,
+    AUTH,
     REMPLAYER;
 }

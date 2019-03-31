@@ -13,12 +13,12 @@ public class Main {
 
 
         //Запуск нового потока для записи в файл при перехвате сигнала завершения
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (args.length != 0) myReadWriter.writeFile(args[0]);
-        }));
+        /*Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (args.length == 0) myReadWriter.writeFile(file);
+        }));*/
 
-        if (args.length != 0) {
-                    myReadWriter.readFile(args[0]);
+        if (args.length == 0) {
+                    //myReadWriter.readFile(file);
 
                     Server server = null;
 
@@ -42,7 +42,7 @@ public class Main {
 
                     boolean exit = false;
                     while (!exit) {
-                        exit = myReadWriter.readCommand(args[0]);
+                        exit = myReadWriter.readCommand(file);
                     }
                     server.stopServer();
         } else System.out.println("Не введено имя файла.");

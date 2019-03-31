@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WorldManager {
 
 
-    private volatile Map<String, Human> humans = new ConcurrentHashMap<>();
-    private Date dateInit = new Date();
+    private final Map<String, Human> humans = new ConcurrentHashMap<>();
+    private final Date dateInit = new Date();
     private static WorldManager wrld = null;
 
     private WorldManager() {}
@@ -53,7 +53,7 @@ public class WorldManager {
      */
     public void showHumans() {
         System.out.println("Список элементов коллекции: ");
-        humans.keySet().stream().forEach(System.out::println);
+        humans.keySet().stream().forEach(k -> System.out.println(k + " " + humans.get(k)));
     }
 
     /**

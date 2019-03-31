@@ -13,6 +13,7 @@ public class Client {
     private ObjectOutputStream writer;
     private Socket client;
     private Thread thread;
+    private boolean isAuth = false;
     private Server server = null;
 
     private Human human;
@@ -30,6 +31,14 @@ public class Client {
         } catch (IOException e) {
             System.out.println("Невозможно получить поток ввода!");
         }
+    }
+
+    public void setIsAuth(boolean a) {
+        isAuth = a;
+    }
+
+    public boolean getIsAuth() {
+        return isAuth;
     }
 
     public void closeConnection() {
@@ -60,8 +69,6 @@ public class Client {
             server.loadPLRS(this);
 
             ClientCommandHandler cmdHandler = new ClientCommandHandler(this , server);
-
-            cmdHandler.executeCommand("help");
 
             try {
                 while (!command.equals("exit")) {
