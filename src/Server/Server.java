@@ -3,7 +3,6 @@ package Server;
 import Entities.Human;
 import Entities.Moves;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -31,6 +30,7 @@ public class Server extends Thread {
     }
 
     public void run() {
+        System.out.println("НЕПРАВИЛЬНО РАБОТАЕТ ДАТА СОЗДАНИЯ ПЕРСОНАЖА");
         System.out.println("Попытка запустить сервер на "+host+":"+port+ "...");
         try {
             serverSocket = new ServerSocket(port, 100, InetAddress.getByName(host));
@@ -57,10 +57,6 @@ public class Server extends Thread {
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
     }
 
-    public DataBaseConnection getDataBaseConnection() {
-        return dataBaseConnection;
-    }
-
     public void movPlayer(Client client, String key, Moves move) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
@@ -81,7 +77,8 @@ public class Server extends Thread {
 
     public void sendToAllClients(String str, Client client) {
         if (client != null)
-            clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "" + client.getName() + ": " + str + "\n"));
+            clients.stream().filter(c -> c.getIsAuth())
+                    .forEach(c -> c.sendMessage(cActions.SEND, "" + client.getUserName() + ": " + str + "\n"));
         else
             clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n"));
     }

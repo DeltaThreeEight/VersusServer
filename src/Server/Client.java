@@ -5,22 +5,24 @@ import Entities.Human;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.HashMap;
 
 public class Client {
     private static volatile int id = 0;
-    private String name;
+    private String userName;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private Socket client;
     private Thread thread;
     private boolean isAuth = false;
-    private Server server = null;
+    private HashMap<String, Human> persons = new HashMap();
+    private Server server;
 
     private Human human;
     private String key;
 
     public Client(Socket socket, Server server) {
-        name = ""+id++;
+        userName = ""+id++;
         client = socket;
         this.server = server;
         try {
@@ -35,6 +37,9 @@ public class Client {
 
     public void setIsAuth(boolean a) {
         isAuth = a;
+        if (isAuth) {
+
+        }
     }
 
     public boolean getIsAuth() {
@@ -74,12 +79,12 @@ public class Client {
                 while (!command.equals("exit")) {
                     sendMessage(cActions.SEND, "Введите команду\n");
                     command = readLine();
-                    System.out.print("Клиент " + name + ": " + command + "\n");
+                    System.out.print("Клиент " + userName + ": " + command + "\n");
                     if (command == null) break;
                     cmdHandler.executeCommand(command);
                 }
             } catch (IOException e) {
-                System.out.println("Потеряно соединение с клиентом " + name + ".");
+                System.out.println("Потеряно соединение с клиентом " + userName + ".");
                 if (getKey() != null) server.remPlayer(getKey());
                 server.getClients().remove(this);
                 return;
@@ -87,9 +92,10 @@ public class Client {
 
             if (getKey() != null) server.remPlayer(getKey());
             server.getClients().remove(this);
-            System.out.println("Клиент " + name + " отключился.");
+            System.out.println("Клиент " + userName + " отключился.");
         } catch (Exception e) {
-            System.out.println("Потеряно соединение с клиентом" + name);
+            e.printStackTrace();
+            System.out.println("Потеряно соединение с клиентом" + userName);
             if (getKey() != null) server.remPlayer(getKey());
             server.getClients().remove(this);
         }
@@ -126,12 +132,12 @@ public class Client {
         }
     }
 
-    public String getName() {
-        return name;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String readLine() throws IOException{
@@ -153,6 +159,19 @@ public class Client {
 
     public Human getHuman() {
         return human;
+    }
+
+    public void showHumans() {
+        sendMessage(cActions.SEND,"Список ваших персонажей:\n");
+        persons.values().stream().map(human -> human.getName()).forEach(c -> sendMessage(cActions.SEND, c+"\n"));
+    }
+
+    public void addHuman(String key,Human human) {
+        persons.put(key, human);
+    }
+
+    public HashMap<String, Human> getPersons() {
+        return persons;
     }
 
 }

@@ -25,8 +25,15 @@ public class ClientCommandHandler {
                 if (commands.length > 2) client.setIsAuth(server.getDBC().executeLogin(commands[1], commands[2]));
                 else client.sendMessage(cActions.SEND, "Авторизация не удалась\n");
                 if (client.getIsAuth()) {
+                    if (server.getClients().stream().anyMatch(c -> c.getUserName().equals(commands[1]))) {
+                        client.sendMessage(cActions.SEND, "Данный пользователь уже авторизован!\n");
+                        client.setIsAuth(false);
+                        break;
+                    }
                     client.sendMessage(cActions.SEND, "Авторизация успешна\n");
                     client.sendMessage(cActions.AUTH, null);
+                    client.setUserName(commands[1]);
+                    server.getDBC().loadPersons(client);
                 }
                 else client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
                 break;
@@ -36,7 +43,12 @@ public class ClientCommandHandler {
                 if (client.getIsAuth()) {
                     client.sendMessage(cActions.SEND, "Регистрация успешна\n");
                     client.sendMessage(cActions.AUTH, null);
+                    client.setUserName(commands[1]);
+                    server.getDBC().loadPersons(client);
                 } else client.sendMessage(cActions.SEND, "Пользователь с таким именем/почтой уже есть\n");
+                break;
+            case "show":
+                client.showHumans();
                 break;
             case "help":
                 helpClient();
@@ -48,44 +60,38 @@ public class ClientCommandHandler {
                 if (commands.length < 2)
                     sendMessage(cActions.SEND,"Отсутсвуют аргументы\n");
                 else {
-                    Boolean flag = true;
-                    for (Client c : server.getClients()) {
-                        if (commands[1].equals(c.getKey())) {
-                            if (c != client) sendMessage(cActions.SEND,"Персонаж уже выбран другим игроком\n");
-                            else sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа\n");
-                            flag = false;
-                            break;
-                        }
+                    Boolean found;
+                    found = client.getPersons().keySet().stream().anyMatch(v -> v.equals(commands[1]));
+                    Human sel = wrldMngr.getHuman(client.getUserName()+commands[1]);
+                    if (client.getHuman() != null && sel.getName().equals(client.getHuman().getName())) {
+                        sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа!\n");
+                        break;
                     }
-                    if (flag) {
-                        Human sel = wrldMngr.getHuman(commands[1]);
-                        if (sel != null) {
-                            if (client.getKey() != null) server.remPlayer(client.getKey());
-                            client.setKey(commands[1]);
-                            client.setHuman(sel);
-                            sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
-                            sendMessage(cActions.DESERIALIZE, "", sel);
-                            server.addPlayer(client, commands[1], sel);
-                            client.setName(sel.getName());
-                        } else
-                            sendMessage(cActions.SEND, "Персонаж не найден\n");
-                    }
+                    if (found) {
+                        if (client.getKey() != null) server.remPlayer(client.getKey());
+                        client.setKey(commands[1]);
+                        client.setHuman(sel);
+                        sendMessage(cActions.SEND, "Выбран персонаж: " + sel.getName() + "\n");
+                        sendMessage(cActions.DESERIALIZE, "", sel);
+                        server.addPlayer(client, commands[1], sel);
+                    } else sendMessage(cActions.SEND, "Персонаж не найден\n");
                 }
                 break;
             case "createnew":
-                if (wrldMngr.getHuman(commands[1]) == null) {
+                if (client.getPersons().get(commands[1]) == null) {
                     if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = (Human) client.readObject();
-                    wrldMngr.addNewHuman(commands[1], human);
+                    wrldMngr.addNewHuman(client.getUserName()+commands[1], human);
+                    server.getDBC().addToDB(client.getUserName(), human);
+                    client.addHuman(commands[1], human);
                     client.setHuman(human);
                     client.setKey(commands[1]);
                     server.addPlayer(client, commands[1], human);
                     sendMessage(cActions.SEND, "Выбран персонаж: " + human.getName() + "\n");
                     client.sendMessage(cActions.DESERIALIZE, "", human);
-                    client.setName(human.getName());
                 } else {
                     client.readObject();
-                    sendMessage(cActions.SEND, "Выбранный идентификатор уже занят.\n");}
+                    sendMessage(cActions.SEND, "У вас уже есть персонаж с этим именем\n");}
                 break;
             case "move":
                 if (commands.length < 2)

@@ -60,6 +60,17 @@ public class DataBaseConnection {
         }
     }
 
+    public void addToDB(String username, Human human) {
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate("INSERT INTO persons VALUES ('" + human.getName() + "', '" +
+                    human.getClass().toString().replace("class Entities.", "") + "', '"
+                    +human.getLocation().getX()+"', '"+ human.getLocation().getY()+"', '"+ username+"');");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public boolean executeLogin(String login, String pass) {
         try {
             Statement statement = connection.createStatement();
@@ -68,6 +79,19 @@ public class DataBaseConnection {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public void loadPersons(Client client) {
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet result = statement.executeQuery("SELECT * FROM persons WHERE username='" + client.getUserName() + "';");
+            while (result.next()) {
+                Human person = WorldManager.getInstance().getHuman(client.getUserName() + result.getString("name"));
+                client.addHuman(result.getString("name"), person);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
