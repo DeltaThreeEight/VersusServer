@@ -33,6 +33,7 @@ public class ClientCommandHandler {
                     client.sendMessage(cActions.SEND, "Авторизация успешна\n");
                     client.sendMessage(cActions.AUTH, null);
                     client.setUserName(commands[1]);
+                    server.sendToAllClients(client.getUserName()+ " авторизовался.", null);
                     server.getDBC().loadPersons(client);
                 }
                 else client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
@@ -45,6 +46,7 @@ public class ClientCommandHandler {
                     client.sendMessage(cActions.AUTH, null);
                     client.setUserName(commands[1]);
                     server.getDBC().loadPersons(client);
+                    server.sendToAllClients(client.getUserName()+ " авторизовался", null);
                 } else client.sendMessage(cActions.SEND, "Пользователь с таким именем/почтой уже есть\n");
                 break;
             case "show":
@@ -78,7 +80,7 @@ public class ClientCommandHandler {
                 }
                 break;
             case "createnew":
-                if (client.getPersons().get(commands[1]) == null) {
+                if (client.getPersons().get(command.replaceFirst(commands[0]+" ", "")) == null) {
                     if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = (Human) client.readObject();
                     wrldMngr.addNewHuman(client.getUserName()+commands[1], human);
@@ -92,6 +94,21 @@ public class ClientCommandHandler {
                 } else {
                     client.readObject();
                     sendMessage(cActions.SEND, "У вас уже есть персонаж с этим именем\n");}
+                break;
+            case "remove":
+                Human person = client.getPersons().get(command.replaceFirst(commands[0]+" ", ""));
+                if (person != null) {
+                    if (client.getKey() != null && client.getKey().equals(person.getName())) {
+                        server.remPlayer(client.getKey());
+                        client.setHuman(null);
+                        client.setKey(null);
+                    }
+                    wrldMngr.removeHuman(client.getUserName(), person.getName());
+                    client.removeHuman(person.getName());
+                    sendMessage(cActions.SEND, "Персонаж успешно удалён\n");
+                } else {
+                    sendMessage(cActions.SEND, "У вас нет персонажа с таким именем\n");
+                }
                 break;
             case "move":
                 if (commands.length < 2)
@@ -120,6 +137,7 @@ public class ClientCommandHandler {
             case "exit":
                 if (client.getKey() != null)
                     server.remPlayer(client.getKey());
+                server.sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");

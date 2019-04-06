@@ -30,7 +30,6 @@ public class Server extends Thread {
     }
 
     public void run() {
-        System.out.println("НЕПРАВИЛЬНО РАБОТАЕТ ДАТА СОЗДАНИЯ ПЕРСОНАЖА");
         System.out.println("Попытка запустить сервер на "+host+":"+port+ "...");
         try {
             serverSocket = new ServerSocket(port, 100, InetAddress.getByName(host));
@@ -77,10 +76,13 @@ public class Server extends Thread {
 
     public void sendToAllClients(String str, Client client) {
         if (client != null)
-            clients.stream().filter(c -> c.getIsAuth())
+            clients.stream()
+                    .filter(c -> c.getIsAuth())
                     .forEach(c -> c.sendMessage(cActions.SEND, "" + client.getUserName() + ": " + str + "\n"));
         else
-            clients.stream().forEach(c -> c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n"));
+            clients.stream()
+                    .filter(c -> c.getIsAuth())
+                    .forEach(c -> c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n"));
     }
 
     public void stopServer() {

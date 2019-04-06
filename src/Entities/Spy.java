@@ -2,7 +2,7 @@ package Entities;
 
 import World.Location;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public class Spy extends Human {
 
@@ -19,7 +19,7 @@ public class Spy extends Human {
         super(name, location);
     }
 
-    public Spy(String name, Location location, Date date) {
+    public Spy(String name, Location location, LocalDateTime date) {
         super(name, location, date);
     }
 

@@ -1,7 +1,9 @@
 package World;
 
 import Entities.Human;
+import Server.*;
 
+import java.io.DataOutputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,12 +18,13 @@ public class WorldManager {
 
     /**
      * Удаляет элемент коллекции по его ключу.
-     * @param key - Название(ключ) элемента коллекции.
+     * @param username - Название(ключ) элемента коллекции.
      * @return Возвращает true, если элемент удалён, false - если нет.
      */
-    public  boolean removeHuman(String key) {
-        if (humans.remove(key) != null) {
+    public  boolean removeHuman(String username , String name) {
+        if (humans.remove(username+name) != null) {
             System.out.println("Элемент успешно удалён");
+
             return true;
         }
         else {

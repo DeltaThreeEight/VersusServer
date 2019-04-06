@@ -9,6 +9,7 @@ import com.google.gson.JsonParseException;
 
 import java.io.*;
 import java.sql.SQLOutput;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -134,7 +135,7 @@ public class MyReadWriter {
                 for (String s : wrldMngr.getHumans().keySet()) {
                     Human c = wrldMngr.getHumans().get(s);
                     writer.write(s + "," + c.getClass().toString().replace("class Entities.", "") + ",\"" + c.getName() + "\"," +
-                            c.getLocation().getX() + "," + c.getLocation().getY() + "," + c.getDate().getTime() + "\r\n");
+                            c.getLocation().getX() + "," + c.getLocation().getY() + "," + c.getDate().toString() + "\r\n");
                 }
                 System.out.println("Запись в файл успешна");
                 writer.close();
@@ -227,12 +228,12 @@ public class MyReadWriter {
                     help();
                     break;
                 case "remove":
-                    if (commands.length < 2) {
+                    if (commands.length < 3) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
                         else
-                            wrldMngr.removeHuman(commands[1]);
+                            wrldMngr.removeHuman(commands[1], commands[2]);
                     }
                     break;
                 case "send":
@@ -312,9 +313,9 @@ public class MyReadWriter {
         if (param[1].equals("SPY") || param[1].equals("MERC"))
             switch(param[1]) {
                 case "SPY":
-                    return new Spy(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), new Date(Long.parseLong(param[5])));
+                    return new Spy(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), LocalDateTime.parse(param[5]));
                 case "MERC":
-                    return new Merc(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), new Date(Long.parseLong(param[5])));
+                    return new Merc(param[2], new Location(Double.valueOf(param[3]), Double.valueOf(param[4])), LocalDateTime.parse(param[5]));
             }
         return null;
     }

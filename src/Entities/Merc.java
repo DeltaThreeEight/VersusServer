@@ -2,6 +2,7 @@ package Entities;
 
 import World.Location;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public class Merc extends Human {
@@ -21,7 +22,7 @@ public class Merc extends Human {
         super(name, location);
     }
 
-    public Merc(String name, Location location, Date date) {
+    public Merc(String name, Location location, LocalDateTime date) {
         super(name, location, date);
     }
 

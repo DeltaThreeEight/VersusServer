@@ -84,6 +84,7 @@ public class Client {
                     cmdHandler.executeCommand(command);
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 System.out.println("Потеряно соединение с клиентом " + userName + ".");
                 if (getKey() != null) server.remPlayer(getKey());
                 server.getClients().remove(this);
@@ -168,6 +169,9 @@ public class Client {
 
     public void addHuman(String key,Human human) {
         persons.put(key, human);
+    }
+    public boolean removeHuman(String key) {
+        return persons.remove(key) != null;
     }
 
     public HashMap<String, Human> getPersons() {

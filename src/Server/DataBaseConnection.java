@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 
 public class DataBaseConnection {
     private String url = "jdbc:postgresql://127.0.0.1:5432/";
@@ -46,10 +47,12 @@ public class DataBaseConnection {
                 String name = result.getString("name");
                 Double x = result.getDouble("x");
                 Double y = result.getDouble("y");
-
+                LocalDateTime time = LocalDateTime.parse(result.getString("creation_date").replace(" ", "T"));
+                Human hum;
                 if (side.equals("Spy"))
-                    wrld.addNewHuman(username+name, new Spy(name, new Location(x, y)));
-                else wrld.addNewHuman(username+name, new Merc(name, new Location(x, y)));
+                    hum = new Spy(name, new Location(x, y), time);
+                else hum = new Merc(name, new Location(x, y), time);
+                wrld.addNewHuman(username+name, hum);
                 i++;
             }
             return i;
@@ -65,7 +68,8 @@ public class DataBaseConnection {
             Statement statement = connection.createStatement();
             statement.executeUpdate("INSERT INTO persons VALUES ('" + human.getName() + "', '" +
                     human.getClass().toString().replace("class Entities.", "") + "', '"
-                    +human.getLocation().getX()+"', '"+ human.getLocation().getY()+"', '"+ username+"');");
+                    +human.getLocation().getX()+"', '"+ human.getLocation().getY()+"', '"
+                    + username+"', '"+human.getDate().toString().replace("T", " ") +"');");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -76,6 +80,17 @@ public class DataBaseConnection {
             Statement statement = connection.createStatement();
             ResultSet result = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"';");
             return result.next();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean removePerson(String username, String name) {
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate("DELETE FROM persons WHERE name='"+name+"' AND username='"+username+"';");
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;

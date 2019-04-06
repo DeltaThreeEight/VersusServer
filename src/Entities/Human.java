@@ -4,6 +4,7 @@ import Exceptions.NotAliveException;
 import World.Location;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
 
@@ -13,22 +14,31 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
     private Location loc;
     private int hp = 100;
     private Moves lastMove = Moves.BACK;
-    private Date dateOfCreation;
+    private LocalDateTime dateOfCreation;
     private double speedModifier = 1.0;
+    private String user = "default";
+
+    public void setUser(String str) {
+        user = str;
+    }
+
+    public String getUser() {
+        return user;
+    }
 
     public Human(String iName) {
         this.name = iName;
         this.loc = new Location(0, 0);
-        dateOfCreation = new Date();
+        dateOfCreation = LocalDateTime.now();
     }
 
     public Human(String iName, Location iLoc) {
         this.name = iName;
         this.loc = iLoc;
-        dateOfCreation = new Date();
+        dateOfCreation = LocalDateTime.now();
     }
 
-    public Human(String iName, Location iLoc, Date date) {
+    public Human(String iName, Location iLoc, LocalDateTime date) {
         this.name = iName;
         this.loc = iLoc;
         dateOfCreation = date;
@@ -74,7 +84,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
 
     @Override
     public String toString() {
-        return name + getClass().toString().replace("class Entities.", " ") + " "+ loc;
+        return name + getClass().toString().replace("class Entities.", " ") + " "+ loc + " " + dateOfCreation;
     }
 
     @Override
@@ -87,7 +97,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
                 Objects.equals(hp, creature.hp);
     }
 
-    public Date getDate() {
+    public LocalDateTime getDate() {
         return dateOfCreation;
     }
 
