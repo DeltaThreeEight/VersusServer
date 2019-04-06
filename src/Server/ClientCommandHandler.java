@@ -5,7 +5,8 @@ import Entities.Moves;
 import Exceptions.NotAliveException;
 import World.WorldManager;
 
-import java.util.Iterator;
+import java.io.IOException;
+
 
 public class ClientCommandHandler {
 
@@ -18,10 +19,13 @@ public class ClientCommandHandler {
         this.server = server;
     }
 
-    public void executeCommand(String command) {
-        String[] commands = command.split(" ");
+    public void executeCommand(String commnd) throws IOException {
+        String command[] = commnd.split("\\$");
+        String[] commands = command[0].split(" ");
         if (commands.length == 0) return;
-
+        if (!commands[0].equals("register") && !commands[0].equals("login") && !commands[0].equals("exit")) {
+            if (!server.getDBC().checkAuthToken(client, client.getUserName(), command[1])) return;
+        }
         switch(commands[0]) {
             case "login":
                 int login_code = server.getDBC().executeLogin(commands[1], commands[2]);
@@ -34,26 +38,25 @@ public class ClientCommandHandler {
                         break;
                     }
                     client.sendMessage(cActions.SEND, "Авторизация успешна\n");
-                    client.sendMessage(cActions.AUTH, null);
                     client.setUserName(commands[1]);
+                    setAuthToken(client);
                     server.sendToAllClients(client.getUserName()+ " авторизовался.", null);
                     server.getDBC().loadPersons(client);
+
                 }
                 else {
                     if (login_code == 2) client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
-                    if (login_code == 1) client.sendMessage(cActions.SEND, "Почта не подтверждена\n");
+                    if (login_code == 1) {
+                        client.sendMessage(cActions.SEND, "Почта не подтверждена. Введите токен, указанный в письме\n");
+                        String token = client.readLine();
+                        server.getDBC().checkRegToken(client, commands[1], token.replace("$null", ""));
+                    }
                 }
                 break;
             case "register":
-                if (commands.length > 2) client.setIsAuth(server.getDBC().executeRegister(commands[1], commands[2], commands[3]));
-                else client.sendMessage(cActions.SEND, "Регистрация не удалась\n");
-                if (client.getIsAuth()) {
-                    client.sendMessage(cActions.SEND, "Регистрация успешна\n");
-                    client.sendMessage(cActions.AUTH, null);
-                    client.setUserName(commands[1]);
-                    server.getDBC().loadPersons(client);
-                    server.sendToAllClients(client.getUserName()+ " авторизовался", null);
-                    new Thread(() -> JavaMail.registration(commands[2])).start();
+                if (commands.length > 2)
+                if (server.getDBC().executeRegister(commands[1], commands[2], commands[3])) {
+                    client.sendMessage(cActions.SEND, "Регистрация успешна. На почту должно придти письмо с подтверждением регистрации\n");
                 } else client.sendMessage(cActions.SEND, "Пользователь с таким именем/почтой уже есть\n");
                 break;
             case "show":
@@ -66,7 +69,7 @@ public class ClientCommandHandler {
                 helpClient();
                 break;
             case "chat":
-                server.sendToAllClients(command.replace(commands[0]+" ", ""), client);
+                server.sendToAllClients(command[0].replace(commands[0]+" ", ""), client);
                 break;
             case "select":
                 if (commands.length < 2)
@@ -90,7 +93,7 @@ public class ClientCommandHandler {
                 }
                 break;
             case "createnew":
-                if (client.getPersons().get(command.replaceFirst(commands[0]+" ", "")) == null) {
+                if (client.getPersons().get(command[0].replaceFirst(commands[0]+" ", "")) == null) {
                     if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = (Human) client.readObject();
                     wrldMngr.addNewHuman(client.getUserName()+commands[1], human, client.getUserName());
@@ -106,7 +109,7 @@ public class ClientCommandHandler {
                     sendMessage(cActions.SEND, "У вас уже есть персонаж с этим именем\n");}
                 break;
             case "remove":
-                Human person = client.getPersons().get(command.replaceFirst(commands[0]+" ", ""));
+                Human person = client.getPersons().get(command[0].replaceFirst(commands[0]+" ", ""));
                 if (person != null) {
                     if (client.getKey() != null && client.getKey().equals(person.getName())) {
                         server.remPlayer(client.getKey());
@@ -174,5 +177,12 @@ public class ClientCommandHandler {
                 "chat [сообщение] - отправить сообщение другим игрокам\n" +
                 "help - справка по командам\n" +
                 "exit - отключиться от сервера\n");
+    }
+
+    public void setAuthToken(Client client) {
+        String token = DataBaseConnection.getToken();
+        client.setIsAuth(true);
+        client.sendMessage(cActions.AUTH, token);
+        server.getDBC().setAuthToken(client.getUserName(), token);
     }
 }

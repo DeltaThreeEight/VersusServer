@@ -17,6 +17,7 @@ public class Client {
     private boolean isAuth = false;
     private HashMap<String, Human> persons = new HashMap();
     private Server server;
+    private ClientCommandHandler cmdHandler = null;
 
     private Human human;
     private String key;
@@ -68,12 +69,16 @@ public class Client {
         return key;
     }
 
+    public Server getServer() {
+        return server;
+    }
+
     private void servClient() {
         try {
             String command = "";
             server.loadPLRS(this);
 
-            ClientCommandHandler cmdHandler = new ClientCommandHandler(this , server);
+            cmdHandler = new ClientCommandHandler(this , server);
 
             try {
                 while (!command.equals("exit")) {
@@ -130,6 +135,10 @@ public class Client {
         } catch (IOException e) {
 
         }
+    }
+
+    public ClientCommandHandler getCmdHandler() {
+        return cmdHandler;
     }
 
     public String getUserName() {

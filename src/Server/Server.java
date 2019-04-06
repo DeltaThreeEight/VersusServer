@@ -126,9 +126,9 @@ public class Server extends Thread {
 class JavaMail {
     static final String ENCODING = "UTF-8";
 
-    public static void registration(String email){
+    public static void registration(String email, String reg_token){
         String subject = "Confirm registration";
-        String content = "Click on the link...";
+        String content = "Registration token: "+reg_token;
         String smtpHost="mail.buycow.org";
         String from="makailyn.talei@buycow.org";
         String login="makailyn.talei";
@@ -137,7 +137,7 @@ class JavaMail {
         try {
             sendSimpleMessage(login, password, from, email, content, subject, smtpPort, smtpHost);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Не удалось отправить письмо");
         }
     }
 

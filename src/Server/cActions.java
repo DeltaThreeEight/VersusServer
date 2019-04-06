@@ -7,5 +7,6 @@ public enum cActions {
     MOVPLAYER,
     LOADPLR,
     AUTH,
+    DEAUTH,
     REMPLAYER;
 }
