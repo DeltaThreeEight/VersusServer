@@ -84,7 +84,6 @@ public class Client {
                     cmdHandler.executeCommand(command);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println("Потеряно соединение с клиентом " + userName + ".");
                 if (getKey() != null) server.remPlayer(getKey());
                 server.getClients().remove(this);

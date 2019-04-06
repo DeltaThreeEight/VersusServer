@@ -1,4 +1,4 @@
-import Server.Server;
+import Server.*;
 import IOStuff.*;
 
 import java.io.IOException;
@@ -13,9 +13,6 @@ public class Main {
 
 
         //Запуск нового потока для записи в файл при перехвате сигнала завершения
-        /*Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (args.length == 0) myReadWriter.writeFile(file);
-        }));*/
 
         if (args.length == 0) {
                     //myReadWriter.readFile(file);
@@ -33,6 +30,7 @@ public class Main {
                             default:
                                 server = new Server();
                         }
+
                     } catch (Exception e) {
                         System.out.println("Неверно задан порт/хост");
                         System.exit(-1);

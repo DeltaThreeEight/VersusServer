@@ -107,7 +107,7 @@ public class MyReadWriter {
                             System.out.println("Ошибка парсинга, попробуйте пустой файл.");
                             if (!canRead) System.exit(-1);
                         }
-                        wrldMngr.addNewHuman(param[0], element);
+                        wrldMngr.addNewHuman(param[0], element, "Server");
                     } catch (IllegalArgumentException e) {
                         System.out.println("Ошибка парсинга, попробуйте пустой файл.");
                         if (!canRead) System.exit(-1);
@@ -170,7 +170,7 @@ public class MyReadWriter {
                                 for (int i = 2; i < commands.length; i++) {
                                     json = json + commands[i];
                                 }
-                                wrldMngr.addNewHuman(commands[1], startParsing(scanner, json));
+                                wrldMngr.addNewHuman(commands[1], startParsing(scanner, json), "Server");
                             System.out.println("Элемент успешно добавлен в коллекцию.");
                             } else System.out.println("Ошибка парсинга");
                         }

@@ -5,6 +5,7 @@ import Entities.Merc;
 import Entities.Spy;
 import World.Location;
 import World.WorldManager;
+import com.lambdaworks.crypto.SCryptUtil;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -52,7 +53,7 @@ public class DataBaseConnection {
                 if (side.equals("Spy"))
                     hum = new Spy(name, new Location(x, y), time);
                 else hum = new Merc(name, new Location(x, y), time);
-                wrld.addNewHuman(username+name, hum);
+                wrld.addNewHuman(username+name, hum, username);
                 i++;
             }
             return i;
@@ -75,14 +76,30 @@ public class DataBaseConnection {
         }
     }
 
-    public boolean executeLogin(String login, String pass) {
+    public void updatePersons() {
         try {
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"';");
-            return result.next();
+            for (Human h : wrld.getHumans().values()) {
+                Statement statement = connection.createStatement();
+                String query = "UPDATE persons SET x ="+h.getLocation().getX()+ ", "
+                        + "y ="+h.getLocation().getY()+" WHERE username='"+h.getUser()+ "' AND name='"+h.getName()+ "';";
+                statement.executeUpdate(query);
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+        }
+    }
+
+    public int executeLogin(String login, String pass) {
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet result = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"' AND email_conf=TRUE;");
+            if (result.next()) return 0;
+            ResultSet result2 = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"' AND email_conf=FALSE ;");
+            if (result2.next()) return 1;
+            return 2;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 
@@ -110,10 +127,10 @@ public class DataBaseConnection {
         }
     }
 
-    public boolean executeRegister(String login, String mail, String pass) {
+    public boolean executeRegister(String login, String mail, String hash) {
         try {
             Statement statement = connection.createStatement();
-            statement.executeUpdate("INSERT INTO users VALUES ('" + login + "', '" +mail+ "', '"+pass+"');");
+            statement.executeUpdate("INSERT INTO users VALUES ('" + login + "', '" +mail+ "', '"+hash+"', 'FALSE', '"+"sdadda"+"');");
             return true;
         } catch (Exception e) {
             e.printStackTrace();

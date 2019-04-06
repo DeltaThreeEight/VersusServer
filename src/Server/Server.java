@@ -3,11 +3,15 @@ package Server;
 import Entities.Human;
 import Entities.Moves;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server extends Thread {
@@ -39,6 +43,9 @@ public class Server extends Thread {
             dataBaseConnection = new DataBaseConnection();
             System.out.println("Загрузка персонажей...");
             System.out.println("Загружено " + dataBaseConnection.loadPersons() + " персонажей.");
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                dataBaseConnection.updatePersons();
+            }));
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
@@ -113,5 +120,71 @@ public class Server extends Thread {
             System.out.println("Что то не так");
             return null;
         }
+    }
+}
+
+class JavaMail {
+    static final String ENCODING = "UTF-8";
+
+    public static void registration(String email){
+        String subject = "Confirm registration";
+        String content = "Click on the link...";
+        String smtpHost="mail.buycow.org";
+        String from="makailyn.talei@buycow.org";
+        String login="makailyn.talei";
+        String password="Login1";
+        String smtpPort="25";
+        try {
+            sendSimpleMessage(login, password, from, email, content, subject, smtpPort, smtpHost);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String args[]) throws MessagingException, UnsupportedEncodingException {
+        String subject = "Confirm registration";
+        String content = "Click on the link...";
+        String smtpHost="mail.buycow.org";
+        String from="makailyn.talei@buycow.org";
+        String to = "mccabe.jireh@buycow.org";
+        String login="makailyn.talei";
+        String password="Login1";
+        String smtpPort="25";
+        sendSimpleMessage (login, password, from, to, content, subject, smtpPort, smtpHost);
+    }
+
+    public static void sendSimpleMessage(String login, String password, String from, String to, String content, String subject, String smtpPort, String smtpHost)
+            throws MessagingException, UnsupportedEncodingException {
+        Authenticator auth = new MyAuthenticator(login, password);
+
+        Properties props = System.getProperties();
+        props.put("mail.smtp.port", smtpPort);
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.mime.charset", ENCODING);
+        Session session = Session.getDefaultInstance(props, auth);
+
+        Message msg = new MimeMessage(session);
+        msg.setFrom(new InternetAddress(from));
+        msg.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
+        msg.setSubject(subject);
+        msg.setText(content);
+        Transport.send(msg);
+    }
+}
+
+class MyAuthenticator extends Authenticator {
+    private String user;
+    private String password;
+
+    MyAuthenticator(String user, String password) {
+        this.user = user;
+        this.password = password;
+    }
+
+    public PasswordAuthentication getPasswordAuthentication() {
+        String user = this.user;
+        String password = this.password;
+        return new PasswordAuthentication(user, password);
     }
 }

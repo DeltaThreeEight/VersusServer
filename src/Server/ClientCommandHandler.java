@@ -5,11 +5,13 @@ import Entities.Moves;
 import Exceptions.NotAliveException;
 import World.WorldManager;
 
+import java.util.Iterator;
+
 public class ClientCommandHandler {
 
     private Client client;
     private WorldManager wrldMngr = WorldManager.getInstance();
-    private Server server = null;
+    private Server server;
 
     public ClientCommandHandler(Client client, Server server) {
         this.client = client;
@@ -22,7 +24,8 @@ public class ClientCommandHandler {
 
         switch(commands[0]) {
             case "login":
-                if (commands.length > 2) client.setIsAuth(server.getDBC().executeLogin(commands[1], commands[2]));
+                int login_code = server.getDBC().executeLogin(commands[1], commands[2]);
+                if (commands.length > 2) client.setIsAuth(login_code == 0);
                 else client.sendMessage(cActions.SEND, "Авторизация не удалась\n");
                 if (client.getIsAuth()) {
                     if (server.getClients().stream().anyMatch(c -> c.getUserName().equals(commands[1]))) {
@@ -36,10 +39,13 @@ public class ClientCommandHandler {
                     server.sendToAllClients(client.getUserName()+ " авторизовался.", null);
                     server.getDBC().loadPersons(client);
                 }
-                else client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
+                else {
+                    if (login_code == 2) client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
+                    if (login_code == 1) client.sendMessage(cActions.SEND, "Почта не подтверждена\n");
+                }
                 break;
             case "register":
-                if (commands.length > 3) client.setIsAuth(server.getDBC().executeRegister(commands[1], commands[2], commands[3]));
+                if (commands.length > 2) client.setIsAuth(server.getDBC().executeRegister(commands[1], commands[2], commands[3]));
                 else client.sendMessage(cActions.SEND, "Регистрация не удалась\n");
                 if (client.getIsAuth()) {
                     client.sendMessage(cActions.SEND, "Регистрация успешна\n");
@@ -47,10 +53,14 @@ public class ClientCommandHandler {
                     client.setUserName(commands[1]);
                     server.getDBC().loadPersons(client);
                     server.sendToAllClients(client.getUserName()+ " авторизовался", null);
+                    new Thread(() -> JavaMail.registration(commands[2])).start();
                 } else client.sendMessage(cActions.SEND, "Пользователь с таким именем/почтой уже есть\n");
                 break;
             case "show":
                 client.showHumans();
+                break;
+            case "show_all":
+                WorldManager.getInstance().showHumansFor(client);
                 break;
             case "help":
                 helpClient();
@@ -83,7 +93,7 @@ public class ClientCommandHandler {
                 if (client.getPersons().get(command.replaceFirst(commands[0]+" ", "")) == null) {
                     if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = (Human) client.readObject();
-                    wrldMngr.addNewHuman(client.getUserName()+commands[1], human);
+                    wrldMngr.addNewHuman(client.getUserName()+commands[1], human, client.getUserName());
                     server.getDBC().addToDB(client.getUserName(), human);
                     client.addHuman(commands[1], human);
                     client.setHuman(human);
@@ -158,6 +168,9 @@ public class ClientCommandHandler {
                 "createnew - создать нового персонажа\n" +
                 "move [направление] - переместить выбранного персонажа, где направление:left, right, forward, back\n" +
                 "showstats - вывести информацию о персонаже\n" +
+                "remove [имя персонажа] - удалить имеющегося персонажа\n" +
+                "show - список ваших персонажей\n" +
+                "show_all - список всех персонажей\n" +
                 "chat [сообщение] - отправить сообщение другим игрокам\n" +
                 "help - справка по командам\n" +
                 "exit - отключиться от сервера\n");

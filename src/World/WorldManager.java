@@ -38,7 +38,8 @@ public class WorldManager {
      * @param key - Название(ключ) элемента коллекции.
      * @param iCreature - Любой наследник Creature.
      */
-    public void addNewHuman(String key, Human iCreature) {
+    public void addNewHuman(String key, Human iCreature, String username) {
+        iCreature.setUser(username);
         humans.put(key, iCreature);
     }
 
@@ -59,6 +60,12 @@ public class WorldManager {
         humans.keySet().stream().forEach(k -> System.out.println(k + " " + humans.get(k)));
     }
 
+    public void showHumansFor(Client client) {
+        client.sendMessage(cActions.SEND, "Список персонажей всех игроков:\n");
+        humans.keySet().stream()
+                .map(k -> humans.get(k).getName()+" ["+humans.get(k).getUser()+"]\n")
+                .forEach(p -> client.sendMessage(cActions.SEND, p));
+    }
     /**
      * Вывести в стандартый поток вывода информацию о коллекции...
      */
