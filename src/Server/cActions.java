@@ -8,5 +8,6 @@ public enum cActions {
     LOADPLR,
     AUTH,
     DEAUTH,
+    SENDTOKEN,
     REMPLAYER;
 }

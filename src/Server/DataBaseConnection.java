@@ -41,10 +41,6 @@ public class DataBaseConnection {
         }
     }
 
-    public boolean addPerson(Human human) {
-        return false;
-    }
-
     public int loadPersons() {
         try {
             int i = 0;
@@ -122,6 +118,8 @@ public class DataBaseConnection {
                 if (time > 90) {
                     client.sendMessage(cActions.SEND, "Срок действия токена истёк\n" +
                             "Вам необходимо авторизоваться по новой\n");
+                    client.setIsAuth(false);
+                    client.setIsTokenValid(false);
                     client.sendMessage(cActions.DEAUTH, null);
                 } else {
                     statement.executeUpdate("UPDATE user_tokens SET auth_token_time='"+LocalDateTime.now()+"' WHERE username='"+user+"';");

@@ -32,12 +32,13 @@ public class ClientCommandHandler {
                 if (commands.length > 2) client.setIsAuth(login_code == 0);
                 else client.sendMessage(cActions.SEND, "Авторизация не удалась\n");
                 if (client.getIsAuth()) {
-                    if (server.getClients().stream().anyMatch(c -> c.getUserName().equals(commands[1]))) {
+                    if (server.getClients().stream().anyMatch(c -> c.getUserName().equals(commands[1]) && c.isTokenValid())) {
                         client.sendMessage(cActions.SEND, "Данный пользователь уже авторизован!\n");
                         client.setIsAuth(false);
                         break;
                     }
                     client.sendMessage(cActions.SEND, "Авторизация успешна\n");
+                    client.setIsTokenValid(true);
                     client.setUserName(commands[1]);
                     setAuthToken(client);
                     server.sendToAllClients(client.getUserName()+ " авторизовался.", null);
@@ -47,6 +48,7 @@ public class ClientCommandHandler {
                 else {
                     if (login_code == 2) client.sendMessage(cActions.SEND, "Неверный логин/пароль\n");
                     if (login_code == 1) {
+                        client.sendMessage(cActions.SENDTOKEN, null);
                         client.sendMessage(cActions.SEND, "Почта не подтверждена. Введите токен, указанный в письме\n");
                         String token = client.readLine();
                         server.getDBC().checkRegToken(client, commands[1], token.replace("$null", ""));
@@ -118,6 +120,7 @@ public class ClientCommandHandler {
                     }
                     wrldMngr.removeHuman(client.getUserName(), person.getName());
                     client.removeHuman(person.getName());
+                    server.getDBC().removePerson(client.getUserName(), person.getName());
                     sendMessage(cActions.SEND, "Персонаж успешно удалён\n");
                 } else {
                     sendMessage(cActions.SEND, "У вас нет персонажа с таким именем\n");

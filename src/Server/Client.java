@@ -15,6 +15,7 @@ public class Client {
     private Socket client;
     private Thread thread;
     private boolean isAuth = false;
+    private boolean isTokenValid = true;
     private HashMap<String, Human> persons = new HashMap();
     private Server server;
     private ClientCommandHandler cmdHandler = null;
@@ -41,6 +42,14 @@ public class Client {
         if (isAuth) {
 
         }
+    }
+
+    public void setIsTokenValid(boolean a) {
+        isTokenValid = a;
+    }
+
+    public boolean isTokenValid() {
+        return isTokenValid;
     }
 
     public boolean getIsAuth() {
