@@ -150,7 +150,7 @@ public class MyReadWriter {
      * @param file путь к файлу, откуда будем читать состояние коллекции, а по завершению работы запишем его туда.
      * @return Возвращает <i>true</i> только в случае, если была введена команда <b>exit</b>.
      */
-    public boolean readCommand(String file) {
+    public boolean readCommand() {
         try{
             Scanner scanner = new Scanner(System.in);
             String command = scanner.nextLine();
@@ -170,14 +170,16 @@ public class MyReadWriter {
                                 for (int i = 2; i < commands.length; i++) {
                                     json = json + commands[i];
                                 }
-                                wrldMngr.addNewHuman(commands[1], startParsing(scanner, json), "Server");
+                                Human s = startParsing(scanner, json);
+                                wrldMngr.addNewHuman(commands[1]+s.getName(), s, commands[1]);
+                                server.getDBC().addToDB(commands[1], s);
                             System.out.println("Элемент успешно добавлен в коллекцию.");
                             } else System.out.println("Ошибка парсинга");
                         }
                     }
                     break;
-                case "remove_greater":
-                    if (commands.length < 2) {
+                case "remove_greatsader":
+                    if (commands.length < 99) {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
@@ -193,7 +195,7 @@ public class MyReadWriter {
                 case "show":
                     wrldMngr.showHumans();
                     break;
-                case "clear":
+                case "cleadsar":
                     if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
                     else
                         wrldMngr.clear();
@@ -232,8 +234,10 @@ public class MyReadWriter {
                         System.out.println("Отсутсвуют аргументы команды.");
                     } else {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
-                        else
+                        else {
+                            server.getDBC().removePerson(commands[1], commands[2]);
                             wrldMngr.removeHuman(commands[1], commands[2]);
+                        }
                     }
                     break;
                 case "send":
@@ -337,11 +341,8 @@ public class MyReadWriter {
                 "       }\n" +
                 "}\n" +
                 "Вместо Spy может быть Merc\n\n" +
-                "remove_greater {element} - удалить из коллекции все элементы длина поля Name которых, больше длины поля Name у {element}.\n\n" +
                 "show - вывести список элементов коллекции.\n\n" +
                 "help - помощь.\n\n" +
-                "clear - удалить из коллекции все элементы.\n\n" +
-                "import {string path} - добавить в коллекцию элементы из файла, где {string path) - путь к файлу.\n\n" +
                 "info - вывести информацию о коллекции.\n\n" +
                 "remove {string} - удалить элемент из коллекции по его ключу.\n\n" +
                 "stop - остановить сервер.\n");

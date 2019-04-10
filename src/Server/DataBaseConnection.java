@@ -7,7 +7,6 @@ import World.Location;
 import World.WorldManager;
 import com.lambdaworks.codec.Base64;
 import com.lambdaworks.crypto.SCrypt;
-import com.lambdaworks.crypto.SCryptUtil;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -16,8 +15,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Period;
-import java.util.concurrent.TimeUnit;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -37,7 +34,7 @@ public class DataBaseConnection {
             System.out.println("Соединение успешно установлено\n");
             wrld = WorldManager.getInstance();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Не удалось подключиться к БД");
         }
     }
 
@@ -63,7 +60,6 @@ public class DataBaseConnection {
             return i;
         } catch (Exception e) {
             System.err.println("Ошибка при загрузке персонажей");
-            e.printStackTrace();
             return -1;
         }
     }
@@ -76,7 +72,7 @@ public class DataBaseConnection {
                     +human.getLocation().getX()+"', '"+ human.getLocation().getY()+"', '"
                     + username+"', '"+human.getDate().toString().replace("T", " ") +"');");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при добавлении в БД персонажа");
         }
     }
 
@@ -89,7 +85,7 @@ public class DataBaseConnection {
                 statement.executeUpdate(query);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при сохранении персонажей в БД");
         }
     }
 
@@ -102,7 +98,7 @@ public class DataBaseConnection {
             if (result2.next()) return 1;
             return 2;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка логина");
             return -1;
         }
     }
@@ -116,18 +112,19 @@ public class DataBaseConnection {
                 LocalDateTime now = LocalDateTime.now();
                 long time = Duration.between(reg_time, now).get(SECONDS);
                 if (time > 90) {
-                    client.sendMessage(cActions.SEND, "Срок действия токена истёк\n" +
-                            "Вам необходимо авторизоваться по новой\n");
+                    client.sendMessage(cActions.SEND, "Срок действия токена истёк\n");
                     client.setIsAuth(false);
                     client.setIsTokenValid(false);
+                    client.setHuman(null);
                     client.sendMessage(cActions.DEAUTH, null);
+                    client.getServer().sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
                 } else {
                     statement.executeUpdate("UPDATE user_tokens SET auth_token_time='"+LocalDateTime.now()+"' WHERE username='"+user+"';");
                     return true;
                 }
             } else client.sendMessage(cActions.SEND, "Неверный токен\n");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при проверке токена");
         }
         return false;
     }
@@ -143,7 +140,9 @@ public class DataBaseConnection {
                 if (time > 120) {
                     client.sendMessage(cActions.SEND, "Срок действия токена истёк\n" +
                             "На почту будет отправлен новый токен\n");
-                    String mail = statement.executeQuery("SELECT * FROM users WHERE username='"+user+"';").getString("email");
+                    ResultSet res = statement.executeQuery("SELECT * FROM users WHERE username='"+user+"';");
+                    res.next();
+                    String mail = res.getString("email");
                     String new_token = getToken();
                     LocalDateTime new_time = LocalDateTime.now();
                     Statement statement1 = connection.createStatement();
@@ -160,6 +159,7 @@ public class DataBaseConnection {
             } else client.sendMessage(cActions.SEND, "Неверный токен\n");
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Ошибка при проверке регистрационного токена");
         }
     }
 
@@ -168,7 +168,7 @@ public class DataBaseConnection {
             Statement state = connection.createStatement();
             state.executeUpdate("UPDATE user_tokens SET auth_token='"+token+ "', auth_token_time='"+LocalDateTime.now()+  "' WHERE username='"+username+"';");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при обновлении авторизационного токена");
         }
     }
 
@@ -177,7 +177,7 @@ public class DataBaseConnection {
             Statement state = connection.createStatement();
             state.executeUpdate("UPDATE users SET email_conf='TRUE' WHERE username='"+username+"';");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при подтвеждении регистрации");
         }
     }
 
@@ -187,7 +187,7 @@ public class DataBaseConnection {
             statement.executeUpdate("DELETE FROM persons WHERE name='"+name+"' AND username='"+username+"';");
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при удалении персонажа");
             return false;
         }
     }
@@ -201,7 +201,7 @@ public class DataBaseConnection {
                 client.addHuman(result.getString("name"), person);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при загрузке персонажей");
         }
     }
 
@@ -214,7 +214,7 @@ public class DataBaseConnection {
             new Thread(() -> JavaMail.registration(mail, reg_token)).start();
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Ошибка при регистрации");
             return false;
         }
     }

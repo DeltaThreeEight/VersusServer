@@ -24,7 +24,6 @@ public class WorldManager {
     public  boolean removeHuman(String username , String name) {
         if (humans.remove(username+name) != null) {
             System.out.println("Элемент успешно удалён");
-
             return true;
         }
         else {

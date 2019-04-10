@@ -17,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
     private volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
-    private int port = 8900;
+    private int port = 8901;
     private String host = "localhost";
     private DataBaseConnection dataBaseConnection = null;
 

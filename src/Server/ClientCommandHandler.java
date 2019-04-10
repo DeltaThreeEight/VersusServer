@@ -80,11 +80,11 @@ public class ClientCommandHandler {
                     Boolean found;
                     found = client.getPersons().keySet().stream().anyMatch(v -> v.equals(commands[1]));
                     Human sel = wrldMngr.getHuman(client.getUserName()+commands[1]);
-                    if (client.getHuman() != null && sel.getName().equals(client.getHuman().getName())) {
-                        sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа!\n");
-                        break;
-                    }
                     if (found) {
+                        if (client.getHuman() != null && sel.getName().equals(client.getHuman().getName())) {
+                            sendMessage(cActions.SEND, "Вы уже выбрали этого персонажа!\n");
+                            break;
+                        }
                         if (client.getKey() != null) server.remPlayer(client.getKey());
                         client.setKey(commands[1]);
                         client.setHuman(sel);
@@ -135,7 +135,7 @@ public class ClientCommandHandler {
                         try {
                             move = Moves.valueOf(commands[1].toUpperCase());
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            System.out.println("Неправильно указано направление движения");
                         }
                         if (move != null) {
                             try {
@@ -153,7 +153,7 @@ public class ClientCommandHandler {
             case "exit":
                 if (client.getKey() != null)
                     server.remPlayer(client.getKey());
-                server.sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
+                if (client.getIsAuth()) server.sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
                 break;
             default:
                 sendMessage(cActions.SEND, "Команда не найдена\n");

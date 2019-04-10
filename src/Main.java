@@ -1,31 +1,21 @@
 import Server.*;
 import IOStuff.*;
 
-import java.io.IOException;
-
 public class Main {
 
     public static void main(String[] args) {
 
         MyReadWriter myReadWriter = MyReadWriter.getInstance();
 
-        String file = "E:\\file.txt";
-
-
-        //Запуск нового потока для записи в файл при перехвате сигнала завершения
-
-        if (args.length == 0) {
-                    //myReadWriter.readFile(file);
-
                     Server server = null;
 
                     try {
                         switch (args.length) {
-                            case 2:
-                                server = new Server(Integer.parseInt(args[1]));
+                            case 1:
+                                server = new Server(Integer.parseInt(args[0]));
                                 break;
-                            case 3:
-                                server = new Server(Integer.parseInt(args[1]), args[2]);
+                            case 2:
+                                server = new Server(Integer.parseInt(args[0]), args[1]);
                                 break;
                             default:
                                 server = new Server();
@@ -40,10 +30,9 @@ public class Main {
 
                     boolean exit = false;
                     while (!exit) {
-                        exit = myReadWriter.readCommand(file);
+                        exit = myReadWriter.readCommand();
                     }
                     server.stopServer();
-        } else System.out.println("Не введено имя файла.");
     }
 }
 
