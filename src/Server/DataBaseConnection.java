@@ -19,9 +19,6 @@ import java.time.LocalDateTime;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class DataBaseConnection {
-    private String url = "jdbc:postgresql://127.0.0.1:5432/";
-    private String name = "postgres";
-    private String pass = "Dima13145";
     private Connection connection = null;
     private WorldManager wrld = null;
 
@@ -30,6 +27,9 @@ public class DataBaseConnection {
             Class.forName("org.postgresql.Driver");
             System.out.println("Драйвер подключен");
 
+            String url = "jdbc:postgresql://127.0.0.1:5432/";
+            String name = "postgres";
+            String pass = "Dima13145";
             connection = DriverManager.getConnection(url, name, pass);
             System.out.println("Соединение успешно установлено\n");
             wrld = WorldManager.getInstance();
@@ -38,17 +38,17 @@ public class DataBaseConnection {
         }
     }
 
-    public int loadPersons() {
+    int loadPersons() {
         try {
             int i = 0;
             Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM \"persons\";");
+            ResultSet result = statement.executeQuery("SELECT * FROM persons;");
             while (result.next()) {
                 String side = result.getString("side");
                 String username = result.getString("username");
                 String name = result.getString("name");
-                Double x = result.getDouble("x");
-                Double y = result.getDouble("y");
+                double x = result.getDouble("x");
+                double y = result.getDouble("y");
                 LocalDateTime time = LocalDateTime.parse(result.getString("creation_date").replace(" ", "T"));
                 Human hum;
                 if (side.equals("Spy"))
@@ -67,21 +67,17 @@ public class DataBaseConnection {
     public void addToDB(String username, Human human) {
         try {
             Statement statement = connection.createStatement();
-            statement.executeUpdate("INSERT INTO persons VALUES ('" + human.getName() + "', '" +
-                    human.getClass().toString().replace("class Entities.", "") + "', '"
-                    +human.getLocation().getX()+"', '"+ human.getLocation().getY()+"', '"
-                    + username+"', '"+human.getDate().toString().replace("T", " ") +"');");
+            statement.executeUpdate("INSERT INTO persons VALUES ('" + human.getName() + "', '" + human.getClass().toString().replace("class Entities.", "") + "', '" + human.getLocation().getX() + "', '" + human.getLocation().getY() + "', '" + username + "', '" + human.getDate().toString().replace("T", " ") + "');");
         } catch (Exception e) {
             System.out.println("Ошибка при добавлении в БД персонажа");
         }
     }
 
-    public void updatePersons() {
+    void updatePersons() {
         try {
             for (Human h : wrld.getHumans().values()) {
                 Statement statement = connection.createStatement();
-                String query = "UPDATE persons SET x ="+h.getLocation().getX()+ ", "
-                        + "y ="+h.getLocation().getY()+" WHERE username='"+h.getUser()+ "' AND name='"+h.getName()+ "';";
+                String query = String.format("UPDATE persons SET x =%s, y =%s WHERE username='%s' AND name='%s';", h.getLocation().getX(), h.getLocation().getY(), h.getUser(), h.getName());
                 statement.executeUpdate(query);
             }
         } catch (Exception e) {
@@ -89,12 +85,13 @@ public class DataBaseConnection {
         }
     }
 
-    public int executeLogin(String login, String pass) {
+    int executeLogin(String login, String pass) {
         try {
             Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"' AND email_conf=TRUE;");
+            String query = String.format("SELECT * FROM users WHERE username='%s' AND  pass='%s' AND email_conf=TRUE;", login, pass);
+            ResultSet result = statement.executeQuery(query);
             if (result.next()) return 0;
-            ResultSet result2 = statement.executeQuery("SELECT * FROM users WHERE username='" + login + "' AND "+ " pass='"+pass+"' AND email_conf=FALSE ;");
+            ResultSet result2 = statement.executeQuery(query);
             if (result2.next()) return 1;
             return 2;
         } catch (Exception e) {
@@ -103,10 +100,10 @@ public class DataBaseConnection {
         }
     }
 
-    public boolean checkAuthToken(Client client, String user, String token) {
+    boolean checkAuthToken(Client client, String user, String token) {
         try {
             Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM user_tokens WHERE username='" + user + "' AND "+ " auth_token='"+token+"';");
+            ResultSet result = statement.executeQuery(String.format("SELECT * FROM user_tokens WHERE username='%s' AND  auth_token='%s';", user, token));
             if (result.next()) {
                 LocalDateTime reg_time = LocalDateTime.parse(result.getString("auth_token_time").replace(" ", "T"));
                 LocalDateTime now = LocalDateTime.now();
@@ -119,7 +116,7 @@ public class DataBaseConnection {
                     client.sendMessage(cActions.DEAUTH, null);
                     client.getServer().sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
                 } else {
-                    statement.executeUpdate("UPDATE user_tokens SET auth_token_time='"+LocalDateTime.now()+"' WHERE username='"+user+"';");
+                    statement.executeUpdate(String.format("UPDATE user_tokens SET auth_token_time='%s' WHERE username='%s';", LocalDateTime.now(), user));
                     return true;
                 }
             } else client.sendMessage(cActions.SEND, "Неверный токен\n");
@@ -129,10 +126,10 @@ public class DataBaseConnection {
         return false;
     }
 
-    public void checkRegToken(Client client, String user, String token) {
+    void checkRegToken(Client client, String user, String token) {
         try {
             Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM user_tokens WHERE username='" + user + "' AND "+ " reg_token='"+token+"';");
+            ResultSet result = statement.executeQuery(String.format("SELECT * FROM user_tokens WHERE username='%s' AND  reg_token='%s';", user, token));
             if (result.next()) {
                 LocalDateTime reg_time = LocalDateTime.parse(result.getString("reg_token_time").replace(" ", "T"));
                 LocalDateTime now = LocalDateTime.now();
@@ -140,13 +137,13 @@ public class DataBaseConnection {
                 if (time > 120) {
                     client.sendMessage(cActions.SEND, "Срок действия токена истёк\n" +
                             "На почту будет отправлен новый токен\n");
-                    ResultSet res = statement.executeQuery("SELECT * FROM users WHERE username='"+user+"';");
+                    ResultSet res = statement.executeQuery(String.format("SELECT * FROM users WHERE username='%s';", user));
                     res.next();
                     String mail = res.getString("email");
                     String new_token = getToken();
                     LocalDateTime new_time = LocalDateTime.now();
                     Statement statement1 = connection.createStatement();
-                    statement1.executeUpdate("UPDATE user_tokens SET reg_token='"+new_token+"', reg_token_time='"+new_time+"' WHERE username='"+user+"';");
+                    statement1.executeUpdate(String.format("UPDATE user_tokens SET reg_token='%s', reg_token_time='%s' WHERE username='%s';", new_token, new_time, user));
                     new Thread(() -> JavaMail.registration(mail, new_token)).start();
                 } else {
                     confirmRegister(user);
@@ -163,39 +160,37 @@ public class DataBaseConnection {
         }
     }
 
-    public void setAuthToken(String username, String token) {
+    void setAuthToken(String username, String token) {
         try {
             Statement state = connection.createStatement();
-            state.executeUpdate("UPDATE user_tokens SET auth_token='"+token+ "', auth_token_time='"+LocalDateTime.now()+  "' WHERE username='"+username+"';");
+            state.executeUpdate(String.format("UPDATE user_tokens SET auth_token='%s', auth_token_time='%s' WHERE username='%s';", token, LocalDateTime.now(), username));
         } catch (Exception e) {
             System.out.println("Ошибка при обновлении авторизационного токена");
         }
     }
 
-    public void confirmRegister(String username) {
+    private void confirmRegister(String username) {
         try {
             Statement state = connection.createStatement();
-            state.executeUpdate("UPDATE users SET email_conf='TRUE' WHERE username='"+username+"';");
+            state.executeUpdate(String.format("UPDATE users SET email_conf='TRUE' WHERE username='%s';", username));
         } catch (Exception e) {
             System.out.println("Ошибка при подтвеждении регистрации");
         }
     }
 
-    public boolean removePerson(String username, String name) {
+    public void removePerson(String username, String name) {
         try {
             Statement statement = connection.createStatement();
-            statement.executeUpdate("DELETE FROM persons WHERE name='"+name+"' AND username='"+username+"';");
-            return true;
+            statement.executeUpdate(String.format("DELETE FROM persons WHERE name='%s' AND username='%s';", name, username));
         } catch (Exception e) {
             System.out.println("Ошибка при удалении персонажа");
-            return false;
         }
     }
 
-    public void loadPersons(Client client) {
+    void loadPersons(Client client) {
         try {
             Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM persons WHERE username='" + client.getUserName() + "';");
+            ResultSet result = statement.executeQuery(String.format("SELECT * FROM persons WHERE username='%s';", client.getUserName()));
             while (result.next()) {
                 Human person = WorldManager.getInstance().getHuman(client.getUserName() + result.getString("name"));
                 client.addHuman(result.getString("name"), person);
@@ -205,12 +200,12 @@ public class DataBaseConnection {
         }
     }
 
-    public boolean executeRegister(String login, String mail, String hash) {
+    boolean executeRegister(String login, String mail, String hash) {
         try {
             Statement statement = connection.createStatement();
-            statement.executeUpdate("INSERT INTO users VALUES ('" + login + "', '" +mail+ "', '"+hash+"', 'FALSE"+"');");
+            statement.executeUpdate(String.format("INSERT INTO users VALUES ('%s', '%s', '%s', 'FALSE');", login, mail, hash));
             String reg_token = DataBaseConnection.getToken();
-            statement.executeUpdate("INSERT INTO user_tokens VALUES ('" + login + "', '" +reg_token+ "', '"+LocalDateTime.now()+"');");
+            statement.executeUpdate(String.format("INSERT INTO user_tokens VALUES ('%s', '%s', '%s');", login, reg_token, LocalDateTime.now()));
             new Thread(() -> JavaMail.registration(mail, reg_token)).start();
             return true;
         } catch (Exception e) {
@@ -219,7 +214,7 @@ public class DataBaseConnection {
         }
     }
 
-    public static String getToken() {
+    static String getToken() {
         try {
             byte[] str = new byte[32];
             SecureRandom.getInstance("SHA1PRNG").nextBytes(str);
@@ -229,4 +224,6 @@ public class DataBaseConnection {
             return null;
         }
     }
+
+
 }

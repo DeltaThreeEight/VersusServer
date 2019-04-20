@@ -6,25 +6,25 @@ import Entities.Human;
 import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client {
-    private static volatile int id = 0;
+    private static volatile AtomicInteger id = new AtomicInteger(0);
     private String userName;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
     private Socket client;
-    private Thread thread;
     private boolean isAuth = false;
     private boolean isTokenValid = true;
-    private HashMap<String, Human> persons = new HashMap();
+    private HashMap<String, Human> persons = new HashMap<>();
     private Server server;
     private ClientCommandHandler cmdHandler = null;
 
     private Human human;
     private String key;
 
-    public Client(Socket socket, Server server) {
-        userName = ""+id++;
+    Client(Socket socket, Server server) {
+        userName = id.getAndIncrement()+"";
         client = socket;
         this.server = server;
         try {
@@ -37,48 +37,46 @@ public class Client {
         }
     }
 
-    public void setIsAuth(boolean a) {
+    void setIsAuth(boolean a) {
         isAuth = a;
-        if (isAuth) {
-
-        }
     }
 
-    public void setIsTokenValid(boolean a) {
+    void setIsTokenValid(boolean a) {
         isTokenValid = a;
     }
 
-    public boolean isTokenValid() {
+    boolean isTokenValid() {
         return isTokenValid;
     }
 
-    public boolean getIsAuth() {
+    boolean getIsAuth() {
         return isAuth;
     }
 
-    public void closeConnection() {
+    void closeConnection() {
         try {
             sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
             writer.close();
             client.close();
         } catch (IOException e) {
+            System.out.println("Соединение с клиентом оборвалось");
         }
     }
 
-    public void startService() {
-        thread = new Thread(this::servClient);
+    void startService() {
+        Thread thread = new Thread(this::servClient);
         thread.start();
     }
 
-    public void setKey(String key) {
+    void setKey(String key) {
         this.key = key;
     }
 
-    public String getKey() {
+    String getKey() {
         return key;
     }
 
-    public Server getServer() {
+    Server getServer() {
         return server;
     }
 
@@ -91,7 +89,6 @@ public class Client {
 
             try {
                 while (!command.equals("exit")) {
-                    sendMessage(cActions.SEND, "Введите команду\n");
                     command = readLine();
                     System.out.print("Клиент " + userName + ": " + command + "\n");
                     if (command == null) break;
@@ -123,46 +120,42 @@ public class Client {
             writer.writeUTF(action + "^" + str);
             writer.flush();
         } catch (IOException e) {
-
+            System.out.println("Ошибка при отправке сообщения клиенту");
         }
     }
 
-    public void sendMessage(cActions action, String str, Object human) {
+    void sendMessage(cActions action, String str, Object human) {
         try {
             writer.writeUTF(action + "^" + str);
             writer.flush();
             sendObject(human);
         } catch (IOException e) {
-
+            System.out.println("Ошибка при отправке объекта клиента");
         }
     }
 
-    private void sendObject(Object obj) {
-        try {
-            writer.writeObject(obj);
-            writer.flush();
-        } catch (IOException e) {
-
-        }
+    private void sendObject(Object obj) throws IOException {
+        writer.writeObject(obj);
+        writer.flush();
     }
 
-    public ClientCommandHandler getCmdHandler() {
+    ClientCommandHandler getCmdHandler() {
         return cmdHandler;
     }
 
-    public String getUserName() {
+    String getUserName() {
         return userName;
     }
 
-    public void setUserName(String userName) {
+    void setUserName(String userName) {
         this.userName = userName;
     }
 
-    public String readLine() throws IOException{
+    String readLine() throws IOException{
         return reader.readUTF();
     }
 
-    public Object readObject() {
+    Object readObject() {
         try {
             return reader.readObject();
         } catch (Exception e) {
@@ -179,19 +172,19 @@ public class Client {
         return human;
     }
 
-    public void showHumans() {
-        sendMessage(cActions.SEND,"Список ваших персонажей:\n");
-        persons.values().stream().map(human -> human.getName()).forEach(c -> sendMessage(cActions.SEND, c+"\n"));
+    void showHumans() {
+        persons.values().stream().map(Human::getName).forEach(c -> sendMessage(cActions.USRPRSN, c+"\n"));
+        sendMessage(cActions.USRPRSN, "$EOF$");
     }
 
-    public void addHuman(String key,Human human) {
+    void addHuman(String key, Human human) {
         persons.put(key, human);
     }
-    public boolean removeHuman(String key) {
-        return persons.remove(key) != null;
+    void removeHuman(String key) {
+        persons.remove(key);
     }
 
-    public HashMap<String, Human> getPersons() {
+    HashMap<String, Human> getPersons() {
         return persons;
     }
 

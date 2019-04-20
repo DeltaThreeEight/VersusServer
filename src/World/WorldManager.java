@@ -1,10 +1,11 @@
 package World;
 
 import Entities.Human;
-import Server.*;
+import Server.Client;
+import Server.cActions;
 
-import java.io.DataOutputStream;
-import java.util.*;
+import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WorldManager {
@@ -60,10 +61,10 @@ public class WorldManager {
     }
 
     public void showHumansFor(Client client) {
-        client.sendMessage(cActions.SEND, "Список персонажей всех игроков:\n");
         humans.keySet().stream()
                 .map(k -> humans.get(k).getName()+" ["+humans.get(k).getUser()+"]\n")
-                .forEach(p -> client.sendMessage(cActions.SEND, p));
+                .forEach(p -> client.sendMessage(cActions.ALLPRSN, p));
+        client.sendMessage(cActions.ALLPRSN, "$EOF$");
     }
     /**
      * Вывести в стандартый поток вывода информацию о коллекции...

@@ -1,16 +1,17 @@
 package IOStuff;
 
-import Entities.*;
-import Server.*;
-import World.*;
+import Entities.Human;
+import Entities.Merc;
+import Entities.Spy;
+import Server.Server;
+import World.Location;
+import World.WorldManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 
 import java.io.*;
-import java.sql.SQLOutput;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -80,10 +81,8 @@ public class MyReadWriter {
     /**
      * Читает файл в формате csv и заполняет коллекцию элементами
      * @param fileName путь к файлу
-     * @return true, если файл успешно прочитан, false - если нетю
-     * @throws IOException Может быть файл не существует или доступа к нему нет...
      */
-    public void readFile(String fileName) {
+    private void readFile(String fileName) {
 
         try {
 
@@ -92,17 +91,17 @@ public class MyReadWriter {
             InputStreamReader reader = new InputStreamReader(new FileInputStream(fileName));
             int k = 0;
             while (k != -1) {
-                String line = "";
+                StringBuilder line = new StringBuilder();
                 k = reader.read();
                 while ((char) k != '\n') {
-                    line = line + (char) k;
+                    line.append((char) k);
                     k = reader.read();
                     if (k == -1) break;
                 }
-                if (line.contains(",")) {
+                if (line.toString().contains(",")) {
                     try {
-                        Human element = pasrseCSV(line);
-                        String param[] = line.split(",");
+                        Human element = pasrseCSV(line.toString());
+                        String param[] = line.toString().split(",");
                         if (element == null) {
                             System.out.println("Ошибка парсинга, попробуйте пустой файл.");
                             if (!canRead) System.exit(-1);
@@ -126,9 +125,8 @@ public class MyReadWriter {
     /**
      * Записывает в файл текущее состояние коллекции.
      * @param file путь к файлу.
-     * @throws IOException А что, а вдруг... доступа к файлу нет!
      */
-    public void writeFile(String file) {
+    private void writeFile(String file) {
         try {
             if (canRead) {
                 OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(file));
@@ -147,7 +145,6 @@ public class MyReadWriter {
 
     /**
      * Функция чтения пользовательского ввода.
-     * @param file путь к файлу, откуда будем читать состояние коллекции, а по завершению работы запишем его туда.
      * @return Возвращает <i>true</i> только в случае, если была введена команда <b>exit</b>.
      */
     public boolean readCommand() {
@@ -165,12 +162,11 @@ public class MyReadWriter {
                         else
                         {
                             if (!commands[1].equals("")) {
-                            String json = "";
-                            if (commands.length > 2)
+                            StringBuilder json = new StringBuilder();
                                 for (int i = 2; i < commands.length; i++) {
-                                    json = json + commands[i];
+                                    json.append(commands[i]);
                                 }
-                                Human s = startParsing(scanner, json);
+                                Human s = startParsing(scanner, json.toString());
                                 wrldMngr.addNewHuman(commands[1]+s.getName(), s, commands[1]);
                                 server.getDBC().addToDB(commands[1], s);
                             System.out.println("Элемент успешно добавлен в коллекцию.");
@@ -184,11 +180,11 @@ public class MyReadWriter {
                     } else {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
                         else {
-                            String json = "";
+                            StringBuilder json = new StringBuilder();
                             for (int i = 1; i < commands.length; i++) {
-                                json = json + commands[i];
+                                json.append(commands[i]);
                             }
-                            wrldMngr.removeGreater(startParsing(scanner, json));
+                            wrldMngr.removeGreater(startParsing(scanner, json.toString()));
                         }
                     }
                     break;
@@ -214,7 +210,7 @@ public class MyReadWriter {
                     } else {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
                         else {
-                            String path = "";
+                            String path;
                             path = commands[1];
                             if (findString(command) != null) path = findString(command);
                             readFile(path);
@@ -258,12 +254,7 @@ public class MyReadWriter {
         }
         catch (NoSuchElementException e) {
             return true;
-        }
-        catch (NullPointerException | JsonParseException e) {
-            System.out.println("Ошибка парсинга");
-            return false;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.out.println("Ошибка парсинга");
             return false;
         }
@@ -276,17 +267,17 @@ public class MyReadWriter {
      */
     private Human startParsing(Scanner scanner, String iJson) {
         boolean flag = true;
-        String json = ""+iJson;
+        StringBuilder json = new StringBuilder("" + iJson);
 
-        if (((json.length()- json.replaceAll("\\{","").length()) - (json.length()- json.replaceAll("\\}","").length()))<1) flag = false;
+        if (((json.length()- json.toString().replaceAll("\\{","").length()) - (json.length()- json.toString().replaceAll("}","").length()))<1) flag = false;
 
         while (flag) {
-            json = json + scanner.nextLine();
-            if (((json.length()- json.replaceAll("\\{","").length()) - (json.length()- json.replaceAll("\\}","").length()))<1) flag = false;
+            json.append(scanner.nextLine());
+            if (((json.length()- json.toString().replaceAll("\\{","").length()) - (json.length()- json.toString().replaceAll("}","").length()))<1) flag = false;
         }
         try {
-            return gson.fromJson(json, Human.class);
-        } catch (Exception e) {
+            return gson.fromJson(json.toString(), Human.class);
+        } catch (Exception ignored) {
         }
         return null;
     }
@@ -327,7 +318,7 @@ public class MyReadWriter {
     /**
      * Вывод список команд при работе в интерактивном режиме
      */
-    public void help() {
+    private void help() {
         System.out.print("Команды при работе в интерактивном режиме:\n\n" +
                 "insert {string} {element} - добавить новый элемент с заданным ключом, {element} должен быть в формате json,а String - строка без пробельных символов\n" +
                 "Пример:\n" +

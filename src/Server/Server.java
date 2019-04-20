@@ -6,20 +6,22 @@ import Entities.Moves;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.io.*;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server extends Thread {
     private ServerSocket serverSocket = null;
-    private volatile List<Client> clients = new CopyOnWriteArrayList<Client>();
+    private List<Client> clients = new CopyOnWriteArrayList<Client>();
     private int port = 8901;
     private String host = "localhost";
     private DataBaseConnection dataBaseConnection = null;
+    private boolean isClosing = false;
 
     public Server() {
     }
@@ -43,41 +45,41 @@ public class Server extends Thread {
             dataBaseConnection = new DataBaseConnection();
             System.out.println("Загрузка персонажей...");
             System.out.println("Загружено " + dataBaseConnection.loadPersons() + " персонажей.");
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                dataBaseConnection.updatePersons();
-            }));
+            Runtime.getRuntime().addShutdownHook(new Thread(() ->
+                dataBaseConnection.updatePersons()
+            ));
         } catch (IOException e) {
             System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
         }
 
-        while (true) {
+        while (!isClosing) {
             Client client = new Client(waitConnection(), this);
             clients.add(client);
             client.startService();
         }
     }
 
-    public void addPlayer(Client client, String key, Human player) {
+    void addPlayer(Client client, String key, Human player) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
     }
 
-    public void movPlayer(Client client, String key, Moves move) {
+    void movPlayer(Client client, String key, Moves move) {
         clients.stream().filter(c -> c != client)
                 .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
     }
 
-    public void loadPLRS(Client client) {
+    void loadPLRS(Client client) {
         clients.stream().filter(c -> c.getKey() != null)
                 .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
     }
 
-    public void remPlayer(String player) {
-        clients.stream().forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
+    void remPlayer(String player) {
+        clients.forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
-    public void remClient(Client client) {
+    void remClient(Client client) {
         clients.remove(client);
     }
 
@@ -93,11 +95,12 @@ public class Server extends Thread {
     }
 
     public void stopServer() {
-        clients.stream().forEach(c -> c.closeConnection());
+        isClosing = true;
+        clients.forEach(c -> c.closeConnection());
         System.exit(0);
     }
 
-    public List<Client> getClients() {
+    List<Client> getClients() {
         return clients;
     }
 
@@ -124,9 +127,9 @@ public class Server extends Thread {
 }
 
 class JavaMail {
-    static final String ENCODING = "UTF-8";
+    private static final String ENCODING = "UTF-8";
 
-    public static void registration(String email, String reg_token){
+    static void registration(String email, String reg_token){
         String subject = "Confirm registration";
         String content = "Registration token: "+reg_token;
         String smtpHost="mail.buycow.org";
@@ -141,20 +144,20 @@ class JavaMail {
         }
     }
 
-    public static void main(String args[]) throws MessagingException, UnsupportedEncodingException {
-        String subject = "Confirm registration";
-        String content = "Click on the link...";
-        String smtpHost="mail.buycow.org";
-        String from="makailyn.talei@buycow.org";
-        String to = "mccabe.jireh@buycow.org";
-        String login="makailyn.talei";
-        String password="Login1";
-        String smtpPort="25";
-        sendSimpleMessage (login, password, from, to, content, subject, smtpPort, smtpHost);
+    public static void main(String args[]) throws MessagingException {
+//        String subject = "Confirm registration";
+//        String content = "Click on the link...";
+//        String smtpHost="mail.buycow.org";
+//        String from="makailyn.talei@buycow.org";
+//        String to = "mccabe.jireh@buycow.org";
+//        String login="makailyn.talei";
+//        String password="Login1";
+//        String smtpPort="25";
+//        sendSimpleMessage (login, password, from, to, content, subject, smtpPort, smtpHost);
     }
 
-    public static void sendSimpleMessage(String login, String password, String from, String to, String content, String subject, String smtpPort, String smtpHost)
-            throws MessagingException, UnsupportedEncodingException {
+    private static void sendSimpleMessage(String login, String password, String from, String to, String content, String subject, String smtpPort, String smtpHost)
+            throws MessagingException {
         Authenticator auth = new MyAuthenticator(login, password);
 
         Properties props = System.getProperties();

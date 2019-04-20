@@ -4,6 +4,7 @@ import World.Location;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class Merc extends Human {
 
@@ -12,7 +13,6 @@ public class Merc extends Human {
     {
         setHealth(150);
     }
-
     public Merc(String name) {
         super(name);
         getLocation().setXY(90,90);
