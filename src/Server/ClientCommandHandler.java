@@ -32,22 +32,22 @@ class ClientCommandHandler {
                 client.setIsAuth(login_code == 0);
                 if (client.getIsAuth()) {
                     if (server.getClients().stream().anyMatch(c -> c.getUserName().equals(commands[1]) && c.isTokenValid())) {
-                        client.sendMessage(cActions.ALERT, "Данный пользователь уже авторизован!\n");
+                        client.sendMessage(cActions.ALERT, "USER_ALREADY_AUTH");
                         client.setIsAuth(false);
                         break;
                     }
-                    client.sendMessage(cActions.ALERT, "Авторизация успешна\n");
+                    client.sendMessage(cActions.ALERT, "AUTH_SUCCESS");
                     client.setIsTokenValid(true);
                     client.setUserName(commands[1]);
                     setAuthToken(client);
-                    server.sendToAllClients(client.getUserName()+ " авторизовался.", null);
+                    server.sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
                     server.getDBC().loadPersons(client);
-
+                    server.loadPLRS(client);
                 }
                 else {
-                    if (login_code == 2) client.sendMessage(cActions.ALERT, "Неверный логин/пароль\n");
+                    if (login_code == 2) client.sendMessage(cActions.ALERT, "WRONG_LOG_PASS");
                     if (login_code == 1) {
-                        client.sendMessage(cActions.SENDTOKEN, "Почта не подтверждена. Введите токен, указанный в письме\n");
+                        client.sendMessage(cActions.SENDTOKEN, "UNCONF_TOKEN");
                         String token = client.readLine();
                         server.getDBC().checkRegToken(client, commands[1], token.replace("$null", ""));
                     }
@@ -56,8 +56,8 @@ class ClientCommandHandler {
             case "register":
                 if (commands.length > 2)
                 if (server.getDBC().executeRegister(commands[1], commands[2], commands[3])) {
-                    client.sendMessage(cActions.ALERT, "Регистрация успешна. На почту должно придти письмо с подтверждением регистрации. Теперь вы можете авторизоваться.\n");
-                } else client.sendMessage(cActions.ALERT, "Пользователь с таким именем/почтой уже есть\n");
+                    client.sendMessage(cActions.ALERT, "REG_SUCCESS");
+                } else client.sendMessage(cActions.ALERT, "NOT_UNIQUE");
                 break;
             case "show":
                 client.showHumans();
@@ -70,13 +70,24 @@ class ClientCommandHandler {
                 break;
             case "showstats":
                 Human stat = wrldMngr.getHuman(client.getUserName()+commands[1]);
-                if (stat != null) sendMessage(cActions.ALERT, "Имя: "+stat.getName()
-                +"\nЗдоровье: "+stat.getHealth()
-                +"\nДата создания: "+stat.getDate());
-                else sendMessage(cActions.ALERT, "У вас нет такого персонажа");
+                if (stat != null) {
+                    sendMessage(cActions.STATS, stat);
+                }
+                else sendMessage(cActions.ALERT, "NO_PERSON");
                 break;
             case "chat":
                 server.sendToAllClients(command[0].replace(commands[0]+" ", ""), client);
+                break;
+            case "deauth":
+                if (client.getHuman() != null) {
+                    server.remPlayer(client.getKey());
+                }
+                server.sendToAllClients(client.getUserName() + " LEFT_SERVER", null);
+                client.setHuman(null);
+                client.setIsAuth(false);
+                client.setKey(null);
+                client.setUserName("0");
+                client.getPersons().clear();
                 break;
             case "select":
                 if (commands.length < 2)
@@ -85,18 +96,18 @@ class ClientCommandHandler {
                     boolean found;
                     found = client.getPersons().keySet().stream().anyMatch(v -> v.equals(commands[1]));
                     Human sel = wrldMngr.getHuman(client.getUserName()+commands[1]);
-                    if (found) {
+                    if (found && sel != null) {
                         if (client.getHuman() != null && sel.getName().equals(client.getHuman().getName())) {
-                            sendMessage(cActions.ALERT, "Вы уже выбрали этого персонажа!\n");
+                            sendMessage(cActions.ALERT, "PERSON_ALREADY_SELECTED");
                             break;
                         }
                         if (client.getKey() != null) server.remPlayer(client.getKey());
                         client.setKey(commands[1]);
                         client.setHuman(sel);
-                        sendMessage(cActions.ALERT, "Выбран персонаж: " + sel.getName() + "\n");
+                        sendMessage(cActions.ALERT, "PERSON_SELECTED " + sel.getName());
                         sendMessage(cActions.DESERIALIZE, sel);
                         server.addPlayer(client, commands[1], sel);
-                    } else sendMessage(cActions.ALERT, "У вас нет такого персонажа\n");
+                    } else sendMessage(cActions.ALERT, "NO_PERSON");
                 }
                 break;
             case "createnew":
@@ -110,7 +121,8 @@ class ClientCommandHandler {
                     client.showHumans();
                 } else {
                     client.readObject();
-                    sendMessage(cActions.SEND, "У вас уже есть персонаж с этим именем\n");}
+                    sendMessage(cActions.ALERT, "SAME_NAME");
+                }
                 break;
             case "remove":
                 Human person = client.getPersons().get(command[0].replaceFirst(commands[0]+" ", ""));
@@ -123,10 +135,10 @@ class ClientCommandHandler {
                     wrldMngr.removeHuman(client.getUserName(), person.getName());
                     client.removeHuman(person.getName());
                     server.getDBC().removePerson(client.getUserName(), person.getName());
-                    sendMessage(cActions.ALERT, "Персонаж успешно удалён\n");
+                    sendMessage(cActions.ALERT, "PERSON_REMOVED");
                     client.showHumans();
                 } else {
-                    sendMessage(cActions.ALERT, "У вас нет персонажа с таким именем\n");
+                    sendMessage(cActions.ALERT, "NO_PERSON");
                 }
                 break;
             case "move":
@@ -155,7 +167,7 @@ class ClientCommandHandler {
             case "exit":
                 if (client.getKey() != null)
                     server.remPlayer(client.getKey());
-                if (client.getIsAuth()) server.sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
+                if (client.getIsAuth()) server.sendToAllClients(client.getUserName() + " LEFT_SERVER", null);
                 break;
         }
     }

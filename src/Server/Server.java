@@ -61,12 +61,12 @@ public class Server extends Thread {
     }
 
     void addPlayer(Client client, String key, Human player) {
-        clients.stream().filter(c -> c != client)
+        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
     }
 
     void movPlayer(Client client, String key, Moves move) {
-        clients.stream().filter(c -> c != client)
+        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
                 .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
     }
 
@@ -76,7 +76,8 @@ public class Server extends Thread {
     }
 
     void remPlayer(String player) {
-        clients.forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
+        clients.stream().filter(c -> c.getIsAuth())
+                .forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
     void remClient(Client client) {
@@ -91,7 +92,7 @@ public class Server extends Thread {
         else
             clients.stream()
                     .filter(c -> c.getIsAuth())
-                    .forEach(c -> c.sendMessage(cActions.SEND, "Сообщение от сервера -> "+ str + "\n"));
+                    .forEach(c -> c.sendMessage(cActions.SEND, "SERVER_MESSAGE -> "+ str + "\n"));
     }
 
     public void stopServer() {

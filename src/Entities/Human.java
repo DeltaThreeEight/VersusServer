@@ -2,14 +2,17 @@ package Entities;
 
 import Exceptions.NotAliveException;
 import World.Location;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
 
-public abstract class Human implements Moveable, Comparable<Human>, Serializable {
-
+public abstract class Human extends Pane implements Moveable, Comparable<Human>, Serializable {
     private String name;
     private Location loc;
     private int hp = 100;
@@ -42,13 +45,24 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
         this.name = iName;
         this.loc = iLoc;
         dateOfCreation = date;
+        setTranslateY(loc.getY());
+        setTranslateX(loc.getX());
     }
+
+    public void show() {}
+    public void hide() {}
 
     public void move(Moves move) throws NotAliveException {
         checkAlive();
+
         lastMove = move;
+
+        setTranslateY(getTranslateY() + move.getY()*speedModifier);
+        setTranslateX(getTranslateX() + move.getX()*speedModifier);
+
+        System.out.println("Перемещение "+loc);
+
         loc.setXY(loc.getX()+ move.getX()*speedModifier, loc.getY() + move.getY()*speedModifier);
-        System.out.println(getName()+" перемещается в "+loc.getName());
     }
 
     public abstract void shoot();
@@ -84,7 +98,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
 
     @Override
     public String toString() {
-        return name + getClass().toString().replace("class Entities.", " ") + " "+ loc + " " + dateOfCreation;
+        return name + getClass().toString().replace("class Entities.", " ") + " "+ loc;
     }
 
     @Override
@@ -94,8 +108,7 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
         Human creature = (Human) o;
         return Objects.equals(name, creature.name) &&
                 Objects.equals(loc, creature.loc) &&
-                Objects.equals(hp, creature.hp) &&
-                Objects.equals(dateOfCreation, dateOfCreation);
+                Objects.equals(hp, creature.hp);
     }
 
     public LocalDateTime getDate() {
@@ -112,12 +125,13 @@ public abstract class Human implements Moveable, Comparable<Human>, Serializable
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, loc, hp, dateOfCreation);
+        return Objects.hash(name, loc, hp);
     }
 
     public double distance(Moveable moveable) {
         return Math.sqrt(Math.pow(getLocation().getY()-moveable.getLocation().getY(), 2.0)
                 + Math.pow((getLocation().getX()-moveable.getLocation().getX()), 2.0));
     }
+
 
 }

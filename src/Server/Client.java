@@ -83,7 +83,6 @@ public class Client {
     private void servClient() {
         try {
             String command = "";
-            server.loadPLRS(this);
 
             cmdHandler = new ClientCommandHandler(this , server);
 
@@ -130,6 +129,7 @@ public class Client {
             writer.flush();
             sendObject(human);
         } catch (IOException e) {
+            e.printStackTrace();
             System.out.println("Ошибка при отправке объекта клиента");
         }
     }

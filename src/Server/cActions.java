@@ -4,6 +4,7 @@ public enum cActions {
     DESERIALIZE,
     ALERT,
     SEND,
+    STATS,
     USRPRSN,
     ALLPRSN,
     ADDPLAYER,
