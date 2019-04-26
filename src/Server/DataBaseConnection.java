@@ -8,11 +8,9 @@ import World.WorldManager;
 import com.lambdaworks.codec.Base64;
 import com.lambdaworks.crypto.SCrypt;
 
+import java.math.BigDecimal;
 import java.security.SecureRandom;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -21,6 +19,21 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class DataBaseConnection {
     private Connection connection = null;
     private WorldManager wrld = null;
+    private PreparedStatement loadPersons;
+    private PreparedStatement addToDB;
+    private PreparedStatement updatePersons;
+    private PreparedStatement executeLogin;
+    private PreparedStatement checkAuthToken;
+    private PreparedStatement updateAuthToken;
+    private PreparedStatement checkRegToken;
+    private PreparedStatement updateRegToken1;
+    private PreparedStatement updateRegToken2;
+    private PreparedStatement setAuthToken;
+    private PreparedStatement confirmRegister;
+    private PreparedStatement removePerson;
+    private PreparedStatement loadPlayerPersons;
+    private PreparedStatement executeRegister1;
+    private PreparedStatement executeRegister2;
 
     {
         try {
@@ -33,6 +46,23 @@ public class DataBaseConnection {
             connection = DriverManager.getConnection(url, name, pass);
             System.out.println("Соединение успешно установлено\n");
             wrld = WorldManager.getInstance();
+            {
+                loadPersons = connection.prepareStatement("SELECT * FROM persons;");
+                addToDB = connection.prepareStatement("INSERT INTO persons VALUES (?, ?, ?, ?, ?, ?)");
+                updatePersons = connection.prepareStatement("UPDATE persons SET x = ?, y = ? WHERE username=? AND name=?;");
+                executeLogin = connection.prepareStatement("SELECT * FROM users WHERE username=? AND  pass=? AND email_conf=?;");
+                checkAuthToken = connection.prepareStatement("SELECT * FROM user_tokens WHERE username=? AND  auth_token=?;");
+                updateAuthToken = connection.prepareStatement("UPDATE user_tokens SET auth_token_time=? WHERE username=?;");
+                checkRegToken = connection.prepareStatement("SELECT * FROM user_tokens WHERE username=? AND reg_token=?;");
+                updateRegToken1 = connection.prepareStatement("SELECT * FROM users WHERE username=?;");
+                updateRegToken2 = connection.prepareStatement("UPDATE user_tokens SET reg_token=?, reg_token_time=? WHERE username=?;");
+                setAuthToken = connection.prepareStatement("UPDATE user_tokens SET auth_token=?, auth_token_time=? WHERE username=?;");
+                confirmRegister = connection.prepareStatement("UPDATE users SET email_conf='TRUE' WHERE username=?;");
+                removePerson = connection.prepareStatement("DELETE FROM persons WHERE name=? AND username=?;");
+                loadPlayerPersons = connection.prepareStatement("SELECT * FROM persons WHERE username=?;");
+                executeRegister1 = connection.prepareStatement("INSERT INTO users VALUES (?, ?, ?, 'FALSE');");
+                executeRegister2 = connection.prepareStatement("INSERT INTO user_tokens VALUES (?, ?, ?);");
+            }
         } catch (Exception e) {
             System.out.println("Не удалось подключиться к БД");
         }
@@ -41,8 +71,7 @@ public class DataBaseConnection {
     int loadPersons() {
         try {
             int i = 0;
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery("SELECT * FROM persons;");
+            ResultSet result = loadPersons.executeQuery();
             while (result.next()) {
                 String side = result.getString("side");
                 String username = result.getString("username");
@@ -66,150 +95,177 @@ public class DataBaseConnection {
 
     public void addToDB(String username, Human human) {
         try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("INSERT INTO persons VALUES ('" + human.getName() + "', '" + human.getClass().toString().replace("class Entities.", "") + "', '" + human.getLocation().getX() + "', '" + human.getLocation().getY() + "', '" + username + "', '" + human.getDate().toString().replace("T", " ") + "');");
+            addToDB.setString(1, human.getName());
+            addToDB.setString(2, human.getClass().toString().replace("class Entities.", ""));
+            addToDB.setBigDecimal(3, new BigDecimal(human.getLocation().getX()));
+            addToDB.setBigDecimal(4, new BigDecimal(human.getLocation().getY()));
+            addToDB.setString(5, username);
+            addToDB.setTimestamp(6, Timestamp.valueOf(human.getDate()));
+            addToDB.executeUpdate();
         } catch (Exception e) {
-            System.out.println("Ошибка при добавлении в БД персонажа");
+            e.printStackTrace();
+            System.err.println("Ошибка при добавлении в БД персонажа");
         }
     }
 
     void updatePersons() {
         try {
             for (Human h : wrld.getHumans().values()) {
-                Statement statement = connection.createStatement();
-                String query = String.format("UPDATE persons SET x =%s, y =%s WHERE username='%s' AND name='%s';", h.getLocation().getX(), h.getLocation().getY(), h.getUser(), h.getName());
-                statement.executeUpdate(query);
+                updatePersons.setBigDecimal(1, new BigDecimal(h.getLocation().getX()));
+                updatePersons.setBigDecimal(2, new BigDecimal(h.getLocation().getY()));
+                updatePersons.setString(3, h.getUser());
+                updatePersons.setString(4, h.getName());
+                updatePersons.executeUpdate();
             }
         } catch (Exception e) {
-            System.out.println("Ошибка при сохранении персонажей в БД");
+            System.err.println("Ошибка при сохранении персонажей в БД");
         }
     }
 
     int executeLogin(String login, String pass) {
         try {
-            Statement statement = connection.createStatement();
-            String query = String.format("SELECT * FROM users WHERE username='%s' AND  pass='%s' AND email_conf=TRUE;", login, pass);
-            ResultSet result = statement.executeQuery(query);
+            executeLogin.setString(1, login);
+            executeLogin.setString(2, pass);
+            executeLogin.setBoolean(3, true);
+            ResultSet result = executeLogin.executeQuery();
+            // Если правильный логин и пароль
             if (result.next()) return 0;
-            ResultSet result2 = statement.executeQuery(query);
+            executeLogin.setBoolean(3, false);
+            ResultSet result2 = executeLogin.executeQuery();
+            // Если правильный логин и пароль, но почта не подтверждена
             if (result2.next()) return 1;
+            // Неправильный логин и пароль
             return 2;
         } catch (Exception e) {
-            System.out.println("Ошибка логина");
+            System.err.println("Ошибка логина");
             return -1;
         }
     }
 
     boolean checkAuthToken(Client client, String user, String token) {
         try {
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery(String.format("SELECT * FROM user_tokens WHERE username='%s' AND  auth_token='%s';", user, token));
+            checkAuthToken.setString(1, user);
+            checkAuthToken.setString(2, token);
+            ResultSet result = checkAuthToken.executeQuery();
             if (result.next()) {
-                LocalDateTime reg_time = LocalDateTime.parse(result.getString("auth_token_time").replace(" ", "T"));
+                LocalDateTime last_login = LocalDateTime.parse(result.getString("auth_token_time").replace(" ", "T"));
                 LocalDateTime now = LocalDateTime.now();
-                long time = Duration.between(reg_time, now).get(SECONDS);
+                long time = Duration.between(last_login, now).get(SECONDS);
                 if (time > 90) {
-                    client.sendMessage(cActions.SEND, "Срок действия токена истёк\n");
+                    client.sendMessage(cActions.ALERT, "EXPIRED_TOKEN");
                     client.setIsAuth(false);
                     client.setIsTokenValid(false);
                     client.setHuman(null);
                     client.sendMessage(cActions.DEAUTH, null);
-                    client.getServer().sendToAllClients(client.getUserName()+ " отключился от сервера.", null);
+                    client.getServer().sendToAllClients(client.getUserName()+ " LEFT_SERVER", null);
                 } else {
-                    statement.executeUpdate(String.format("UPDATE user_tokens SET auth_token_time='%s' WHERE username='%s';", LocalDateTime.now(), user));
+                    updateAuthToken.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+                    updateAuthToken.setString(2, user);
+                    updateAuthToken.executeUpdate();
                     return true;
                 }
-            } else client.sendMessage(cActions.SEND, "Неверный токен\n");
+            } else client.sendMessage(cActions.ALERT, "INVALID_TOKEN");
         } catch (Exception e) {
-            System.out.println("Ошибка при проверке токена");
+            System.err.println("Ошибка при проверке токена");
         }
         return false;
     }
 
     void checkRegToken(Client client, String user, String token) {
         try {
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery(String.format("SELECT * FROM user_tokens WHERE username='%s' AND  reg_token='%s';", user, token));
+            checkRegToken.setString(1, user);
+            checkRegToken.setString(2, token);
+            ResultSet result = checkRegToken.executeQuery();
             if (result.next()) {
                 LocalDateTime reg_time = LocalDateTime.parse(result.getString("reg_token_time").replace(" ", "T"));
                 LocalDateTime now = LocalDateTime.now();
                 long time = Duration.between(reg_time, now).get(SECONDS);
                 if (time > 120) {
-                    client.sendMessage(cActions.SEND, "Срок действия токена истёк\n" +
-                            "На почту будет отправлен новый токен\n");
-                    ResultSet res = statement.executeQuery(String.format("SELECT * FROM users WHERE username='%s';", user));
+                    client.sendMessage(cActions.ALERT, "EXPIRED_REG_TOKEN");
+                    updateRegToken1.setString(1, user);
+                    ResultSet res = updateRegToken1.executeQuery();
                     res.next();
                     String mail = res.getString("email");
                     String new_token = getToken();
                     LocalDateTime new_time = LocalDateTime.now();
-                    Statement statement1 = connection.createStatement();
-                    statement1.executeUpdate(String.format("UPDATE user_tokens SET reg_token='%s', reg_token_time='%s' WHERE username='%s';", new_token, new_time, user));
+                    updateRegToken2.setString(1, new_token);
+                    updateRegToken2.setTimestamp(2, Timestamp.valueOf(new_time));
+                    updateRegToken2.setString(3, user);
+                    updateRegToken2.executeUpdate();
                     new Thread(() -> JavaMail.registration(mail, new_token)).start();
                 } else {
                     confirmRegister(user);
-                    client.sendMessage(cActions.SEND, "Почта подтверждена!\n");
+                    client.sendMessage(cActions.ALERT, "EMAIL_CONF");
                     client.setUserName(user);
                     client.getCmdHandler().setAuthToken(client);
-                    client.getServer().sendToAllClients(client.getUserName()+ " авторизовался.", null);
+                    client.getServer().sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
                     client.getServer().getDBC().loadPersons(client);
                 }
-            } else client.sendMessage(cActions.SEND, "Неверный токен\n");
+            } else client.sendMessage(cActions.ALERT, "WRONG_TOKEN");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Ошибка при проверке регистрационного токена");
+            System.err.println("Ошибка при проверке регистрационного токена");
         }
     }
 
     void setAuthToken(String username, String token) {
         try {
-            Statement state = connection.createStatement();
-            state.executeUpdate(String.format("UPDATE user_tokens SET auth_token='%s', auth_token_time='%s' WHERE username='%s';", token, LocalDateTime.now(), username));
+            setAuthToken.setString(1, token);
+            setAuthToken.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+            setAuthToken.setString(3, username);
+            setAuthToken.executeUpdate();
         } catch (Exception e) {
-            System.out.println("Ошибка при обновлении авторизационного токена");
+            System.err.println("Ошибка при обновлении авторизационного токена");
         }
     }
 
     private void confirmRegister(String username) {
         try {
-            Statement state = connection.createStatement();
-            state.executeUpdate(String.format("UPDATE users SET email_conf='TRUE' WHERE username='%s';", username));
+            confirmRegister.setString(1, username);
+            confirmRegister.executeUpdate();
         } catch (Exception e) {
-            System.out.println("Ошибка при подтвеждении регистрации");
+            System.err.println("Ошибка при подтвеждении регистрации");
         }
     }
 
     public void removePerson(String username, String name) {
         try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(String.format("DELETE FROM persons WHERE name='%s' AND username='%s';", name, username));
+            removePerson.setString(1, name);
+            removePerson.setString(2, username);
+            removePerson.executeUpdate();
         } catch (Exception e) {
-            System.out.println("Ошибка при удалении персонажа");
+            System.err.println("Ошибка при удалении персонажа");
         }
     }
 
     void loadPersons(Client client) {
         try {
-            Statement statement = connection.createStatement();
-            ResultSet result = statement.executeQuery(String.format("SELECT * FROM persons WHERE username='%s';", client.getUserName()));
+            loadPlayerPersons.setString(1, client.getUserName());
+            ResultSet result = loadPlayerPersons.executeQuery();
             while (result.next()) {
                 Human person = WorldManager.getInstance().getHuman(client.getUserName() + result.getString("name"));
                 client.addHuman(result.getString("name"), person);
             }
         } catch (Exception e) {
-            System.out.println("Ошибка при загрузке персонажей");
+            System.err.println("Ошибка при загрузке персонажей");
         }
     }
 
     boolean executeRegister(String login, String mail, String hash) {
         try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate(String.format("INSERT INTO users VALUES ('%s', '%s', '%s', 'FALSE');", login, mail, hash));
-            String reg_token = DataBaseConnection.getToken();
-            statement.executeUpdate(String.format("INSERT INTO user_tokens VALUES ('%s', '%s', '%s');", login, reg_token, LocalDateTime.now()));
+            executeRegister1.setString(1, login);
+            executeRegister1.setString(2, mail);
+            executeRegister1.setString(3, hash);
+            executeRegister1.executeUpdate();
+            String reg_token = getToken();
+            executeRegister2.setString(1, login);
+            executeRegister2.setString(2, reg_token);
+            executeRegister2.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            executeRegister2.executeUpdate();
             new Thread(() -> JavaMail.registration(mail, reg_token)).start();
             return true;
         } catch (Exception e) {
-            System.out.println("Ошибка при регистрации");
+            System.err.println("Ошибка при регистрации");
             return false;
         }
     }
