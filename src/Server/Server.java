@@ -60,9 +60,9 @@ public class Server extends Thread {
         }
     }
 
-    void addPlayer(Client client, String key, Human player) {
+    void addPlayer(Client client, Human player) {
         clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.ADDPLAYER, key+"^", player));
+                .forEach(c -> c.sendMessage(cActions.ADDPLAYER, player.getName()+"^", player));
     }
 
     void movPlayer(Client client, String key, Moves move) {

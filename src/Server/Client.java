@@ -82,34 +82,24 @@ public class Client {
 
     private void servClient() {
         try {
-            String command = "";
 
             cmdHandler = new ClientCommandHandler(this , server);
+            Command cmd = readCMD();
 
-            try {
-                while (!command.equals("exit")) {
-                    command = readLine();
-                    System.out.print("Клиент " + userName + ": " + command + "\n");
-                    if (command == null) break;
-                    cmdHandler.executeCommand(command);
+                while (!cmd.getName().equals("exit")) {
+                    System.out.println("Клиент " + userName + ": " + cmd.getName());
+                    cmdHandler.executeCommand(cmd);
+                    cmd = readCMD();
                 }
-            } catch (IOException e) {
-                System.out.println("Потеряно соединение с клиентом " + userName + ".");
-                if (getKey() != null) server.remPlayer(getKey());
-                server.getClients().remove(this);
-                return;
-            }
 
-            if (getKey() != null) server.remPlayer(getKey());
-            server.getClients().remove(this);
             System.out.println("Клиент " + userName + " отключился.");
+
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Потеряно соединение с клиентом" + userName);
-            if (getKey() != null) server.remPlayer(getKey());
-            server.getClients().remove(this);
+            System.err.println(String.format("Потеряно соединение с клиентом %s.", userName));
+            System.err.println(e.getMessage());
         }
         finally {
+            if (getKey() != null) server.remPlayer(getKey());
             server.remClient(this);
         }
     }
@@ -119,7 +109,7 @@ public class Client {
             writer.writeUTF(action + "^" + str);
             writer.flush();
         } catch (IOException e) {
-            System.out.println("Ошибка при отправке сообщения клиенту");
+            System.err.println("Ошибка при отправке сообщения клиенту");
         }
     }
 
@@ -151,15 +141,22 @@ public class Client {
         this.userName = userName;
     }
 
-    String readLine() throws IOException{
-        return reader.readUTF();
+    Command readCMD() {
+        try {
+            return (Command) reader.readObject();
+        } catch (Exception e) {
+            System.err.println("Ошибка при чтении команды");
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    Object readObject() {
+    Human readHuman() {
         try {
-            return reader.readObject();
+            return (Human) reader.readObject();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Ошибка при приёме персонажа");
+            System.err.println(e.getMessage());
             return null;
         }
     }
@@ -177,8 +174,8 @@ public class Client {
         sendMessage(cActions.USRPRSN, "$EOF$");
     }
 
-    void addHuman(String key, Human human) {
-        persons.put(key, human);
+    void addHuman(Human human) {
+        persons.put(human.getName(), human);
     }
     void removeHuman(String key) {
         persons.remove(key);

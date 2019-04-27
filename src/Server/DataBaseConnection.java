@@ -7,6 +7,7 @@ import World.Location;
 import World.WorldManager;
 import com.lambdaworks.codec.Base64;
 import com.lambdaworks.crypto.SCrypt;
+import com.lambdaworks.crypto.SCryptUtil;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -34,6 +35,7 @@ public class DataBaseConnection {
     private PreparedStatement loadPlayerPersons;
     private PreparedStatement executeRegister1;
     private PreparedStatement executeRegister2;
+    private PreparedStatement getUserSalt;
 
     {
         try {
@@ -60,8 +62,9 @@ public class DataBaseConnection {
                 confirmRegister = connection.prepareStatement("UPDATE users SET email_conf='TRUE' WHERE username=?;");
                 removePerson = connection.prepareStatement("DELETE FROM persons WHERE name=? AND username=?;");
                 loadPlayerPersons = connection.prepareStatement("SELECT * FROM persons WHERE username=?;");
-                executeRegister1 = connection.prepareStatement("INSERT INTO users VALUES (?, ?, ?, 'FALSE');");
+                executeRegister1 = connection.prepareStatement("INSERT INTO users VALUES (?, ?, ?, 'FALSE', ?);");
                 executeRegister2 = connection.prepareStatement("INSERT INTO user_tokens VALUES (?, ?, ?);");
+                getUserSalt = connection.prepareStatement("SELECT salt FROM users WHERE username=?;");
             }
         } catch (Exception e) {
             System.out.println("Не удалось подключиться к БД");
@@ -124,8 +127,13 @@ public class DataBaseConnection {
 
     int executeLogin(String login, String pass) {
         try {
+            getUserSalt.setString(1, login);
+            ResultSet resultSet = getUserSalt.executeQuery();
+            if (!resultSet.next()) return 2;
+            String salt = resultSet.getString("salt");
+            String hash = getHash(pass, salt);
             executeLogin.setString(1, login);
-            executeLogin.setString(2, pass);
+            executeLogin.setString(2, hash);
             executeLogin.setBoolean(3, true);
             ResultSet result = executeLogin.executeQuery();
             // Если правильный логин и пароль
@@ -153,11 +161,7 @@ public class DataBaseConnection {
                 long time = Duration.between(last_login, now).get(SECONDS);
                 if (time > 90) {
                     client.sendMessage(cActions.ALERT, "EXPIRED_TOKEN");
-                    client.setIsAuth(false);
-                    client.setIsTokenValid(false);
-                    client.setHuman(null);
-                    client.sendMessage(cActions.DEAUTH, null);
-                    client.getServer().sendToAllClients(client.getUserName()+ " LEFT_SERVER", null);
+                    client.getCmdHandler().deauth();
                 } else {
                     updateAuthToken.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
                     updateAuthToken.setString(2, user);
@@ -197,6 +201,7 @@ public class DataBaseConnection {
                     confirmRegister(user);
                     client.sendMessage(cActions.ALERT, "EMAIL_CONF");
                     client.setUserName(user);
+                    client.getServer().loadPLRS(client);
                     client.getCmdHandler().setAuthToken(client);
                     client.getServer().sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
                     client.getServer().getDBC().loadPersons(client);
@@ -244,18 +249,21 @@ public class DataBaseConnection {
             ResultSet result = loadPlayerPersons.executeQuery();
             while (result.next()) {
                 Human person = WorldManager.getInstance().getHuman(client.getUserName() + result.getString("name"));
-                client.addHuman(result.getString("name"), person);
+                client.addHuman(person);
             }
         } catch (Exception e) {
             System.err.println("Ошибка при загрузке персонажей");
         }
     }
 
-    boolean executeRegister(String login, String mail, String hash) {
+    boolean executeRegister(String login, String mail, String pass) {
         try {
+            String salt = getSalt();
+            String hash = getHash(pass, salt);
             executeRegister1.setString(1, login);
             executeRegister1.setString(2, mail);
             executeRegister1.setString(3, hash);
+            executeRegister1.setString(4, salt);
             executeRegister1.executeUpdate();
             String reg_token = getToken();
             executeRegister2.setString(1, login);
@@ -279,6 +287,27 @@ public class DataBaseConnection {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    static String getHash(String pass, String salt) {
+        try {
+            byte[] hash = SCrypt.scrypt(pass.getBytes("UTF-8"), salt.getBytes("UTF-8"), 16, 16, 16, 32);
+            return new String(Base64.encode(hash));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    static String getSalt() {
+        try {
+            byte[] salt = new byte[16];
+            SecureRandom.getInstance("SHA1PRNG").nextBytes(salt);
+            return new String(Base64.encode(salt));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 
