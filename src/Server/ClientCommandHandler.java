@@ -84,9 +84,9 @@ class ClientCommandHandler {
                 break;
             case "createnew":
                 String name = cmd.getArgs()[0];
-                if (client.getPersons().get(name) == null) {
+                if (wrldMngr.getHuman(name) == null) {
                     Human human = client.readHuman();
-                    wrldMngr.addNewHuman(client.getUserName()+name, human, client.getUserName());
+                    wrldMngr.addNewHuman(name, human, client.getUserName());
                     server.getDBC().addToDB(client.getUserName(), human);
                     client.addHuman(human);
                     client.showHumans();

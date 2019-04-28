@@ -86,7 +86,7 @@ public class DataBaseConnection {
                 if (side.equals("Spy"))
                     hum = new Spy(name, new Location(x, y), time);
                 else hum = new Merc(name, new Location(x, y), time);
-                wrld.addNewHuman(username+name, hum, username);
+                wrld.addNewHuman(name, hum, username);
                 i++;
             }
             return i;
@@ -248,7 +248,7 @@ public class DataBaseConnection {
             loadPlayerPersons.setString(1, client.getUserName());
             ResultSet result = loadPlayerPersons.executeQuery();
             while (result.next()) {
-                Human person = WorldManager.getInstance().getHuman(client.getUserName() + result.getString("name"));
+                Human person = WorldManager.getInstance().getHuman(result.getString("name"));
                 client.addHuman(person);
             }
         } catch (Exception e) {
