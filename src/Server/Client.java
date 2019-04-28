@@ -5,6 +5,7 @@ import Entities.Human;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,7 +56,6 @@ public class Client {
 
     void closeConnection() {
         try {
-            sendMessage(cActions.SEND, "Сервер закрывает соединение...\n");
             writer.close();
             client.close();
         } catch (IOException e) {
@@ -95,8 +95,10 @@ public class Client {
             System.out.println("Клиент " + userName + " отключился.");
 
         } catch (Exception e) {
-            System.err.println(String.format("Потеряно соединение с клиентом %s.", userName));
-            System.err.println(e.getMessage());
+            if (!server.isClosing()) {
+                System.err.println(String.format("Потеряно соединение с клиентом %s.", userName));
+                System.err.println(e.getMessage());
+            }
         }
         finally {
             if (getKey() != null) server.remPlayer(getKey());
@@ -109,7 +111,8 @@ public class Client {
             writer.writeUTF(action + "^" + str);
             writer.flush();
         } catch (IOException e) {
-            System.err.println("Ошибка при отправке сообщения клиенту");
+            if (!server.isClosing())
+                System.err.println("Ошибка при отправке сообщения клиенту");
         }
     }
 
@@ -144,9 +147,11 @@ public class Client {
     Command readCMD() {
         try {
             return (Command) reader.readObject();
+        } catch (SocketException ignored) {
+
         } catch (Exception e) {
-            System.err.println("Ошибка при чтении команды");
-            e.printStackTrace();
+                System.err.println("Ошибка при чтении команды");
+                e.printStackTrace();
         }
         return null;
     }

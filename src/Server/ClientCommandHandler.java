@@ -73,8 +73,9 @@ class ClientCommandHandler {
                             sendMessage(cActions.ALERT, "PERSON_ALREADY_SELECTED");
                             break;
                         }
-                        if (client.getHuman() != null) server.remPlayer(client.getKey());
-                        client.setKey(prsnName);
+                        if (client.getHuman() != null)
+                            server.remPlayer(client.getHuman().getName());
+                        client.setKey(sel.getName());
                         client.setHuman(sel);
                         sendMessage(cActions.ALERT, "PERSON_SELECTED " + sel.getName());
                         sendMessage(cActions.DESERIALIZE, sel);
@@ -84,12 +85,10 @@ class ClientCommandHandler {
             case "createnew":
                 String name = cmd.getArgs()[0];
                 if (client.getPersons().get(name) == null) {
-                    if (client.getKey() != null) server.remPlayer(client.getKey());
                     Human human = client.readHuman();
                     wrldMngr.addNewHuman(client.getUserName()+name, human, client.getUserName());
                     server.getDBC().addToDB(client.getUserName(), human);
                     client.addHuman(human);
-                    server.addPlayer(client, human);
                     client.showHumans();
                 } else {
                     client.readHuman();
@@ -134,7 +133,7 @@ class ClientCommandHandler {
                     }
                 break;
             case "exit":
-                deauth();
+                client.closeConnection();
                 break;
         }
     }
@@ -149,8 +148,8 @@ class ClientCommandHandler {
         client.setUserName(cmd.getArgs()[0]);
         setAuthToken(client);
         server.getDBC().loadPersons(client);
-        server.loadPLRS(client);
         client.sendMessage(cActions.ALERT, "AUTH_SUCCESS");
+        server.loadPLRS(client);
         server.sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
         return true;
     }
@@ -162,10 +161,10 @@ class ClientCommandHandler {
         client.setHuman(null);
         client.setIsAuth(false);
         client.setKey(null);
+        server.sendToAllClients(client.getUserName() + " LEFT_SERVER", null);
         client.setUserName(DataBaseConnection.getToken());
         client.getPersons().clear();
         client.sendMessage(cActions.DEAUTH, null);
-        server.sendToAllClients(client.getUserName() + " LEFT_SERVER", null);
     }
 
     private void sendMessage(cActions action, String str) {

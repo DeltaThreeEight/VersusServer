@@ -113,6 +113,10 @@ public class Server extends Thread {
         return dataBaseConnection;
     }
 
+    public boolean isClosing() {
+        return isClosing;
+    }
+
     private Socket waitConnection() {
         try {
             Socket client;
