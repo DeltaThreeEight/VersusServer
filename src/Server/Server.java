@@ -137,11 +137,11 @@ class JavaMail {
     static void registration(String email, String reg_token){
         String subject = "Confirm registration";
         String content = "Registration token: "+reg_token;
-        String smtpHost="mail.buycow.org";
-        String from="makailyn.talei@buycow.org";
-        String login="makailyn.talei";
-        String password="Login1";
-        String smtpPort="25";
+        String smtpHost="smtp.yandex.ru";
+        String from="mcharacter@yandex.ru";
+        String login="mcharacter";
+        String password="Dima13145";
+        String smtpPort="465";
         try {
             sendSimpleMessage(login, password, from, email, content, subject, smtpPort, smtpHost);
         } catch (Exception e) {
@@ -169,6 +169,8 @@ class JavaMail {
         props.put("mail.smtp.port", smtpPort);
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         props.put("mail.mime.charset", ENCODING);
         Session session = Session.getDefaultInstance(props, auth);
 

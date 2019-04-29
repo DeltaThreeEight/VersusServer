@@ -2,17 +2,15 @@ package Entities;
 
 import Exceptions.NotAliveException;
 import World.Location;
-import javafx.geometry.Rectangle2D;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.shape.Rectangle;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Objects;
 
-public abstract class Human extends Pane implements Moveable, Comparable<Human>, Serializable {
+public abstract class Human extends FlowPane implements Moveable, Comparable<Human>, Serializable {
     private String name;
     private Location loc;
     private int hp = 100;

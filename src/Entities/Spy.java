@@ -15,6 +15,8 @@ public class Spy extends Human {
         getLocation().setXY(10,10);
     }
 
+    public void show() {}
+
     public Spy(String name, Location location) {
         super(name, location);
     }

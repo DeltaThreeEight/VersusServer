@@ -19,11 +19,10 @@ public class WorldManager {
 
     /**
      * Удаляет элемент коллекции по его ключу.
-     * @param username - Название(ключ) элемента коллекции.
      * @return Возвращает true, если элемент удалён, false - если нет.
      */
-    public  boolean removeHuman(String username , String name) {
-        if (humans.remove(username+name) != null) {
+    public  boolean removeHuman(String name) {
+        if (humans.remove(name) != null) {
             System.out.println("Элемент успешно удалён");
             return true;
         }

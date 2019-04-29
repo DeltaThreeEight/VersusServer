@@ -104,7 +104,7 @@ class ClientCommandHandler {
                         client.setHuman(null);
                         client.setKey(null);
                     }
-                    wrldMngr.removeHuman(client.getUserName(), person.getName());
+                    wrldMngr.removeHuman(person.getName());
                     client.removeHuman(person.getName());
                     server.getDBC().removePerson(client.getUserName(), person.getName());
                     sendMessage(cActions.ALERT, "PERSON_REMOVED");
@@ -177,7 +177,7 @@ class ClientCommandHandler {
     }
 
     private boolean isAuthCMD(Command cmd) {
-        if (cmd.getName().equals("register") || cmd.getName().equals("login"))
+        if (cmd.getName().equals("register") || cmd.getName().equals("login") || cmd.getName().equals("deauth"))
             return true;
         else return false;
     }

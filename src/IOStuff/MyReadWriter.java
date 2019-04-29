@@ -232,7 +232,7 @@ public class MyReadWriter {
                         if (server.hasPlayers()) System.out.println("Операция не поддерживается, когда на сервере есть игроки");
                         else {
                             server.getDBC().removePerson(commands[1], commands[2]);
-                            wrldMngr.removeHuman(commands[1], commands[2]);
+                            wrldMngr.removeHuman(commands[1]);
                         }
                     }
                     break;

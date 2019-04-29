@@ -18,6 +18,8 @@ public class Merc extends Human {
         getLocation().setXY(90,90);
     }
 
+    public void show() {}
+
     public Merc(String name, Location location) {
         super(name, location);
     }
