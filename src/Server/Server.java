@@ -65,9 +65,14 @@ public class Server extends Thread {
                 .forEach(c -> c.sendMessage(cActions.ADDPLAYER, player.getName()+"^", player));
     }
 
-    void movPlayer(Client client, String key, Moves move) {
+    void movPlayer(Client client, Moves move) {
         clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+key));
+                .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+client.getHuman().getName()));
+    }
+
+    void tpPlayer(Client client, double x, double y) {
+        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
+                .forEach(c -> c.sendMessage(cActions.TELEPORT, x+" "+y+"^"+client.getHuman().getName()));
     }
 
     void loadPLRS(Client client) {

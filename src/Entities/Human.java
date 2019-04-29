@@ -63,6 +63,12 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
 
     public void teleport(double x, double y) {}
 
+    public void teleportOther(double x, double y) {
+        setTranslateX(x);
+        setTranslateY(y);
+        loc.setXY(x, y);
+    }
+
     public void moveOther(Moves move) {}
 
     public void move(Moves move) throws NotAliveException {
@@ -73,9 +79,9 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         setTranslateY(getTranslateY() + move.getY()*speedModifier);
         setTranslateX(getTranslateX() + move.getX()*speedModifier);
 
-        System.out.println("Перемещение "+loc);
-
         loc.setXY(loc.getX()+ move.getX()*speedModifier, loc.getY() + move.getY()*speedModifier);
+
+        System.out.println("Перемещение "+loc);
     }
 
     public abstract void shoot();

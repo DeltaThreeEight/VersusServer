@@ -113,6 +113,17 @@ class ClientCommandHandler {
                     sendMessage(cActions.ALERT, "NO_PERSON");
                 }
                 break;
+            case "teleport":
+                try {
+                    Human crte = client.getHuman();
+                    double x = Double.parseDouble(cmd.getArgs()[0]);
+                    double y = Double.parseDouble(cmd.getArgs()[1]);
+                    crte.teleportOther(x, y);
+                    server.tpPlayer(client, x, y);
+                } catch (NotAliveException e) {
+                    sendMessage(cActions.ALERT, e.getMessage());
+                }
+                break;
             case "move":
                     if (client.getHuman() != null) {
                         Moves move = null;
@@ -125,7 +136,7 @@ class ClientCommandHandler {
                             try {
                                 Human crte = client.getHuman();
                                 crte.move(move);
-                                server.movPlayer(client, client.getKey(), move);
+                                server.movPlayer(client, move);
                             } catch (NotAliveException e) {
                                 sendMessage(cActions.ALERT, e.getMessage());
                             }
