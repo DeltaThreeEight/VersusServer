@@ -18,6 +18,15 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     private LocalDateTime dateOfCreation;
     private double speedModifier = 1.0;
     private String user = "default";
+    private Rectangle col_rec;
+
+    public Rectangle getCol_rec() {
+        return col_rec;
+    }
+
+    public void setCol_rec(Rectangle col_rec) {
+        this.col_rec = col_rec;
+    }
 
     public void setUser(String str) {
         user = str;
@@ -49,6 +58,12 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
 
     public void show() {}
     public void hide() {}
+
+    public boolean checkIntersects(Human h) {return false;}
+
+    public void teleport(double x, double y) {}
+
+    public void moveOther(Moves move) {}
 
     public void move(Moves move) throws NotAliveException {
         checkAlive();

@@ -53,7 +53,7 @@ class ClientCommandHandler {
                 WorldManager.getInstance().showHumansFor(client);
                 break;
             case "showstats":
-                Human stat = wrldMngr.getHuman(client.getUserName()+cmd.getArgs()[0]);
+                Human stat = wrldMngr.getHuman(cmd.getArgs()[0]);
                 if (stat != null) {
                     sendMessage(cActions.STATS, stat);
                 }
