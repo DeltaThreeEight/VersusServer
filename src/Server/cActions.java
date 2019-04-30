@@ -6,6 +6,7 @@ public enum cActions {
     SEND,
     STATS,
     TELEPORT,
+    SHOOT,
     USRPRSN,
     ALLPRSN,
     ADDPLAYER,

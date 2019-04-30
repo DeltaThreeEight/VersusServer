@@ -75,6 +75,11 @@ public class Server extends Thread {
                 .forEach(c -> c.sendMessage(cActions.TELEPORT, x+" "+y+"^"+client.getHuman().getName()));
     }
 
+    void shootFromPlr(Client client) {
+        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
+                .forEach(c -> c.sendMessage(cActions.SHOOT, client.getHuman().getName()));
+    }
+
     void loadPLRS(Client client) {
         clients.stream().filter(c -> c.getKey() != null)
                 .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));

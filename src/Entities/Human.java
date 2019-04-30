@@ -20,6 +20,10 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     private String user = "default";
     private Rectangle col_rec;
 
+    public Moves getLastMove() {
+        return lastMove;
+    }
+
     public Rectangle getCol_rec() {
         return col_rec;
     }
@@ -84,7 +88,13 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         System.out.println("Перемещение "+loc);
     }
 
-    public abstract void shoot();
+    public void shootOther() {
+
+    }
+
+    public void shoot() {
+
+    }
 
     public int getHealth() {
         return hp;

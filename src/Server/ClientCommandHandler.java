@@ -124,6 +124,9 @@ class ClientCommandHandler {
                     sendMessage(cActions.ALERT, e.getMessage());
                 }
                 break;
+            case "shoot":
+                server.shootFromPlr(client);
+                break;
             case "move":
                     if (client.getHuman() != null) {
                         Moves move = null;
