@@ -90,6 +90,11 @@ public class Server extends Thread {
                 .forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
     }
 
+    void killPlayer(String player) {
+        clients.stream().filter(c -> c.getIsAuth())
+                .forEach(c -> c.sendMessage(cActions.KILLPLAYER, player));
+    }
+
     void remClient(Client client) {
         clients.remove(client);
     }

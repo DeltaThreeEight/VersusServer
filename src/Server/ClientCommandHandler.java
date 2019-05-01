@@ -124,6 +124,24 @@ class ClientCommandHandler {
                     sendMessage(cActions.ALERT, e.getMessage());
                 }
                 break;
+            case "hit":
+                Human hitted = wrldMngr.getHuman(cmd.getArgs()[0]);
+                hitted.setHealth(hitted.getHealth() - 10);
+                if (!hitted.isAlive()) {
+                    server.getDBC().removePerson(hitted.getUser(), hitted.getName());
+                    wrldMngr.removeHuman(hitted.getName());
+                    for (Client c : server.getClients()) {
+                        if (c.getUserName().equals(hitted.getUser())) {
+                            c.removeHuman(hitted.getName());
+                            c.setHuman(null);
+                            c.setKey(null);
+                            c.showHumans();
+                            break;
+                        }
+                    }
+                    server.killPlayer(hitted.getName());
+                }
+                break;
             case "shoot":
                 server.shootFromPlr(client);
                 break;

@@ -76,16 +76,17 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     public void moveOther(Moves move) {}
 
     public void move(Moves move) throws NotAliveException {
-        checkAlive();
 
-        lastMove = move;
+        if (isAlive()) {
+            lastMove = move;
 
-        setTranslateY(getTranslateY() + move.getY()*speedModifier);
-        setTranslateX(getTranslateX() + move.getX()*speedModifier);
+            setTranslateY(getTranslateY() + move.getY() * speedModifier);
+            setTranslateX(getTranslateX() + move.getX() * speedModifier);
 
-        loc.setXY(loc.getX()+ move.getX()*speedModifier, loc.getY() + move.getY()*speedModifier);
+            loc.setXY(loc.getX() + move.getX() * speedModifier, loc.getY() + move.getY() * speedModifier);
 
-        System.out.println("Перемещение "+loc);
+            System.out.println("Перемещение " + loc);
+        } else System.out.println("Перемещение невозможно");
     }
 
     public void shootOther() {
@@ -121,8 +122,8 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         return name;
     }
 
-    public void checkAlive() throws NotAliveException{
-        if (hp < 1) throw new NotAliveException(this);
+    public boolean isAlive() {
+        return hp > 0 ? true : false;
     }
 
     @Override
