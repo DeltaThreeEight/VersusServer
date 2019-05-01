@@ -130,6 +130,7 @@ public class Client {
     private void sendObject(Object obj) throws IOException {
         writer.writeObject(obj);
         writer.flush();
+        writer.reset();
     }
 
     ClientCommandHandler getCmdHandler() {
