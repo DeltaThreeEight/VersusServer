@@ -143,6 +143,19 @@ class ClientCommandHandler {
                 }
                 break;
             case "shoot":
+                Human h1 = client.getHuman();
+                h1.shoot();
+
+                if (h1.getAmmo() <= 0) {
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException ignored) { }
+                        h1.reload();
+                        client.sendMessage(cActions.RELOAD, h1.getName());
+                    }).start();
+                }
+
                 server.shootFromPlr(client);
                 break;
             case "move":

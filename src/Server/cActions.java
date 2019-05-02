@@ -13,6 +13,7 @@ public enum cActions {
     ADDPLAYER,
     MOVPLAYER,
     LOADPLR,
+    RELOAD,
     AUTH,
     DEAUTH,
     SENDTOKEN,

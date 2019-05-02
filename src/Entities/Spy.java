@@ -26,6 +26,6 @@ public class Spy extends Human {
     }
 
     public void shoot() {
-        //TODO придумать как же стерлять из шокера
+        super.shoot();
     }
 }

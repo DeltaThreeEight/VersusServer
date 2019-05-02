@@ -8,8 +8,6 @@ import java.util.TimeZone;
 
 public class Merc extends Human {
 
-    transient private int ammo = 60;
-
     {
         setHealth(150);
     }
@@ -29,7 +27,7 @@ public class Merc extends Human {
     }
 
     public void shoot() {
-        //TODO как же будет стрелять винтовка?
+        super.shoot();
     }
 
 }

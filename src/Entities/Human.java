@@ -4,6 +4,7 @@ import Exceptions.NotAliveException;
 import World.Location;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Rectangle;
 
 import java.io.Serializable;
@@ -14,11 +15,17 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     private String name;
     private Location loc;
     private int hp = 100;
+    private int ammo = 30;
     private Moves lastMove = Moves.BACK;
     private LocalDateTime dateOfCreation;
     private double speedModifier = 1.0;
     private String user = "default";
+    protected Ellipse body;
+    protected Ellipse head;
+    protected Ellipse right_hand;
+    protected Ellipse left_hand;
     private Rectangle col_rec;
+    protected Pane root;
 
     public Moves getLastMove() {
         return lastMove;
@@ -32,6 +39,8 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         this.col_rec = col_rec;
     }
 
+    protected void rotare(boolean b) {}
+
     public void setUser(String str) {
         user = str;
     }
@@ -44,6 +53,14 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         this.name = iName;
         this.loc = new Location(0, 0);
         dateOfCreation = LocalDateTime.now();
+    }
+
+    public int getAmmo() {
+        return ammo;
+    }
+
+    public void reload() {
+        ammo = 30;
     }
 
     public Human(String iName, Location iLoc) {
@@ -61,9 +78,12 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     }
 
     public void show() {}
+
+
+    public void show(String res) {}
     public void hide() {}
 
-    public boolean checkIntersects(Human h) {return false;}
+    public boolean checkIntersects(Moves move) {return false;}
 
     public void teleport(double x, double y) {}
 
@@ -94,7 +114,7 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     }
 
     public void shoot() {
-
+        ammo--;
     }
 
     public int getHealth() {
