@@ -24,6 +24,9 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     protected Ellipse head;
     protected Ellipse right_hand;
     protected Ellipse left_hand;
+    protected Rectangle right_arm;
+    protected Rectangle left_arm;
+    protected Rectangle gun;
     private Rectangle col_rec;
     protected Pane root;
 
@@ -112,6 +115,8 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     public void shootOther() {
 
     }
+
+    public void shootAnim() {}
 
     public void shoot() {
         ammo--;
