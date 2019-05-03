@@ -85,6 +85,11 @@ public class Server extends Thread {
                 .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
     }
 
+    void rotarePLR(Client client, String move) {
+        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
+                .forEach(c -> c.sendMessage(cActions.ROTARE, client.getHuman().getName() + "^" + move));
+    }
+
     void remPlayer(String player) {
         clients.stream().filter(c -> c.getIsAuth())
                 .forEach(c -> c.sendMessage(cActions.REMPLAYER, player));

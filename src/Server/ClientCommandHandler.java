@@ -177,6 +177,11 @@ class ClientCommandHandler {
                         }
                     }
                 break;
+            case "rotare":
+                server.rotarePLR(client, cmd.getArgs()[0]);
+                Moves move123 = Moves.valueOf(cmd.getArgs()[0]);
+                client.getHuman().setLastMove(move123);
+                break;
             case "exit":
                 client.closeConnection();
                 break;

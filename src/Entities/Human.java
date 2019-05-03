@@ -42,7 +42,11 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         this.col_rec = col_rec;
     }
 
-    protected void rotare(boolean b) {}
+    public void setLastMove(Moves move) {
+        lastMove = move;
+    }
+
+    public void rotare(boolean b) {}
 
     public void setUser(String str) {
         user = str;

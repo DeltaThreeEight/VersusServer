@@ -14,6 +14,7 @@ public enum cActions {
     MOVPLAYER,
     LOADPLR,
     RELOAD,
+    ROTARE,
     AUTH,
     DEAUTH,
     SENDTOKEN,
