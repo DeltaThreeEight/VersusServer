@@ -46,6 +46,8 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         lastMove = move;
     }
 
+    public static void kill(double x, double y) {}
+
     public void rotare(boolean b) {}
 
     public void setUser(String str) {

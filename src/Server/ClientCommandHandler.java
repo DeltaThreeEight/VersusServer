@@ -3,6 +3,7 @@ package Server;
 import Entities.Human;
 import Entities.Moves;
 import Exceptions.NotAliveException;
+import World.Location;
 import World.WorldManager;
 
 
@@ -140,6 +141,7 @@ class ClientCommandHandler {
                         }
                     }
                     server.killPlayer(hitted.getName());
+                    server.getPuddles().add(new Location(hitted.getLocation().getX(), hitted.getLocation().getY()));
                 }
                 break;
             case "shoot":
@@ -200,6 +202,7 @@ class ClientCommandHandler {
         server.getDBC().loadPersons(client);
         client.sendMessage(cActions.ALERT, "AUTH_SUCCESS");
         server.loadPLRS(client);
+        server.loadPDLS(client);
         server.sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
         return true;
     }

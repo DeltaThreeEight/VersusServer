@@ -15,6 +15,7 @@ public enum cActions {
     LOADPLR,
     RELOAD,
     ROTARE,
+    LOADPUDDLE,
     AUTH,
     DEAUTH,
     SENDTOKEN,

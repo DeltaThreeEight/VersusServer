@@ -2,6 +2,7 @@ package Server;
 
 import Entities.Human;
 import Entities.Moves;
+import World.Location;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
@@ -22,8 +23,13 @@ public class Server extends Thread {
     private String host = "localhost";
     private DataBaseConnection dataBaseConnection = null;
     private boolean isClosing = false;
+    private List<Location> puddles = new CopyOnWriteArrayList<>();
 
     public Server() {
+    }
+
+    public List<Location> getPuddles() {
+        return puddles;
     }
 
     public Server(int port) {
@@ -83,6 +89,10 @@ public class Server extends Thread {
     void loadPLRS(Client client) {
         clients.stream().filter(c -> c.getKey() != null)
                 .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
+    }
+
+    void loadPDLS(Client client) {
+        puddles.stream().forEach(c -> client.sendMessage(cActions.LOADPUDDLE, c.toString()));
     }
 
     void rotarePLR(Client client, String move) {
@@ -157,11 +167,11 @@ class JavaMail {
     static void registration(String email, String reg_token){
         String subject = "Confirm registration";
         String content = "Registration token: "+reg_token;
-        String smtpHost="smtp.yandex.ru";
-        String from="mcharacter@yandex.ru";
-        String login="mcharacter";
-        String password="Dima13145";
-        String smtpPort="465";
+        String smtpHost="mail.buycow.org";
+        String from="Lab8@buycow.org";
+        String login="dimadarthrevan";
+        String password="123456";
+        String smtpPort="25";
         try {
             sendSimpleMessage(login, password, from, email, content, subject, smtpPort, smtpHost);
         } catch (Exception e) {
@@ -189,8 +199,8 @@ class JavaMail {
         props.put("mail.smtp.port", smtpPort);
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.ssl.enable", "true");
-        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        //props.put("mail.smtp.ssl.enable", "true");
+        //props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         props.put("mail.mime.charset", ENCODING);
         Session session = Session.getDefaultInstance(props, auth);
 
