@@ -1,6 +1,6 @@
 package Server;
 
-public enum cActions {
+public enum Actions {
     DESERIALIZE,
     ALERT,
     SEND,
@@ -8,16 +8,16 @@ public enum cActions {
     TELEPORT,
     SHOOT,
     KILLPLAYER,
-    USRPRSN,
-    ALLPRSN,
+    SENDPERSONLIST,
+    SENDALLPERSONS,
     ADDPLAYER,
     MOVPLAYER,
-    LOADPLR,
+    LOADPLAYERS,
     RELOAD,
     ROTARE,
     LOADPUDDLE,
-    AUTH,
+    CLOSECONNECTION,
     DEAUTH,
-    SENDTOKEN,
+    REQUESTTOKEN,
     REMPLAYER
 }

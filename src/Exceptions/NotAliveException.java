@@ -2,8 +2,8 @@ package Exceptions;
 
 import Entities.Human;
 
-public class NotAliveException extends RuntimeException {//Unchecked exception
-    private Human human; //Объект пытавшийся переместиться
+public class NotAliveException extends RuntimeException {
+    private Human human;
 
     public NotAliveException(Human human) {
         super(human.getName() + " мертв.");

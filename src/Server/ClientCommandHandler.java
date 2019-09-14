@@ -3,246 +3,272 @@ package Server;
 import Entities.Human;
 import Entities.Moves;
 import Exceptions.NotAliveException;
+import Server.Commands.ClientCommand;
 import World.Location;
 import World.WorldManager;
 
 
 class ClientCommandHandler {
 
-    private Client client;
-    private WorldManager wrldMngr = WorldManager.getInstance();
+    private WorldManager world;
     private Server server;
 
-    ClientCommandHandler(Client client, Server server) {
-        this.client = client;
+    ClientCommandHandler(Server server) {
         this.server = server;
+        this.world = server.getWorld();
     }
 
-    void executeCommand(Command cmd) {
-
-        if (!isAuthCMD(cmd))
-            if (!server.getDBC().checkAuthToken(client, client.getUserName(), cmd.getToken())) return;
-
-        switch(cmd.getName()) {
-            case "login":
-                int login_code = server.getDBC().executeLogin(cmd.getArgs()[0], cmd.getArgs()[1]);
-
-                switch (login_code) {
-                    case 0:
-                        auth(cmd);
-                        break;
-                    case 1:
-                        client.sendMessage(cActions.SENDTOKEN, "UNCONF_TOKEN");
-                        String token = client.readCMD().getArgs()[0];
-                        server.getDBC().checkRegToken(client, cmd.getArgs()[0], token);
-                        break;
-                    case 2:
-                        client.sendMessage(cActions.ALERT, "WRONG_LOG_PASS");
-                        break;
-                }
-
-                break;
-            case "register":
-                if (server.getDBC().executeRegister(cmd.getArgs()[0], cmd.getArgs()[1], cmd.getArgs()[2])) {
-                    client.sendMessage(cActions.ALERT, "REG_SUCCESS");
-                } else client.sendMessage(cActions.ALERT, "NOT_UNIQUE");
-                break;
-            case "show":
-                client.showHumans();
-                break;
-            case "show_all":
-                WorldManager.getInstance().showHumansFor(client);
-                break;
-            case "showstats":
-                Human stat = wrldMngr.getHuman(cmd.getArgs()[0]);
-                if (stat != null) {
-                    sendMessage(cActions.STATS, stat);
-                }
-                else sendMessage(cActions.ALERT, "NO_PERSON");
-                break;
-            case "chat":
-                server.sendToAllClients(cmd.getArgs()[0], client);
-                break;
-            case "deauth":
-                deauth();
-                break;
-            case "select":
-                    String prsnName = cmd.getArgs()[0];
-                    Human sel = client.getPersons().get(prsnName);
-                    if (sel != null) {
-                        if (client.getHuman() != null && sel.getName().equals(client.getHuman().getName())) {
-                            sendMessage(cActions.ALERT, "PERSON_ALREADY_SELECTED");
-                            break;
-                        }
-                        if (client.getHuman() != null)
-                            server.remPlayer(client.getHuman().getName());
-                        client.setKey(sel.getName());
-                        client.setHuman(sel);
-                        sendMessage(cActions.ALERT, "PERSON_SELECTED " + sel.getName());
-                        sendMessage(cActions.DESERIALIZE, sel);
-                        server.addPlayer(client, sel);
-                    } else sendMessage(cActions.ALERT, "NO_PERSON");
-                break;
-            case "createnew":
-                String name = cmd.getArgs()[0];
-                if (wrldMngr.getHuman(name) == null) {
-                    Human human = client.readHuman();
-                    wrldMngr.addNewHuman(name, human, client.getUserName());
-                    server.getDBC().addToDB(client.getUserName(), human);
-                    client.addHuman(human);
+    void executeCommand(Client client, ClientCommand command) {
+        if (client.isAuthorized()) {
+            switch (command.getCommandName()) {
+                case "show":
                     client.showHumans();
-                } else {
-                    client.readHuman();
-                    sendMessage(cActions.ALERT, "SAME_NAME");
-                }
+                    break;
+                case "show_all":
+                    world.showHumansFor(client);
+                    break;
+                case "showstats":
+                    showStats(client, command.getArg(0));
+                    break;
+                case "chat":
+                    server.sendToAllClients(command.getArgsAsOne(), client);
+                    break;
+                case "deauth":
+                    deauth(client);
+                    break;
+                case "select":
+                    trySelect(client, command.getArg(0));
+                    break;
+                case "createnew":
+                    createNewPerson(client, command.getPerson());
+                    break;
+                case "remove":
+                    removePerson(client, command.getArg(0));
+                    break;
+                case "teleport":
+                    teleportPerson(client, command.getArg(0), command.getArg(1));
+                    break;
+                case "hit":
+                    hitPerson(command.getArg(0));
+                    break;
+                case "shoot":
+                    shoot(client);
+                    break;
+                case "move":
+                    move(client, command.getArg(0));
+                    break;
+                case "rotare":
+                    rotare(client, command.getArg(0));
+                    break;
+                case "login":
+                    client.sendMessage(Actions.ALERT, "ALREADY_AUTH");
+                    break;
+                case "register":
+                    client.sendMessage(Actions.ALERT, "ALREADY_REG");
+                    break;
+                case "exit":
+                    client.closeConnection();
+                    break;
+            }
+        } else {
+            switch (command.getCommandName()) {
+                case "login":
+                    tryLogin(client, command.getArg(0), command.getArg(1));
+                    break;
+                case "register":
+                    register(client, command.getArg(0), command.getArg(1), command.getArg(2));
+                    break;
+                default:
+                    client.sendMessage(Actions.ALERT, "NOT_AUTH");
+            }
+        }
+    }
+
+    private void register(Client client, String login, String password, String email) {
+        if (server.getDBC().executeRegister(login, password, email))
+            client.sendMessage(Actions.ALERT, "REG_SUCCESS");
+        else
+            client.sendMessage(Actions.ALERT, "NOT_UNIQUE");
+    }
+
+    private void tryLogin(Client client, String login, String pass) {
+        switch (server.getDBC().executeLogin(login, pass)) {
+            case 0:
+                authorize(client, login);
                 break;
-            case "remove":
-                String name_rem = cmd.getArgs()[0];
-                Human person = client.getPersons().get(name_rem);
-                if (person != null) {
-                    if (client.getHuman() != null && client.getHuman().getName().equals(person.getName())) {
-                        server.remPlayer(client.getHuman().getName());
-                        client.setHuman(null);
-                        client.setKey(null);
-                    }
-                    wrldMngr.removeHuman(person.getName());
-                    client.removeHuman(person.getName());
-                    server.getDBC().removePerson(client.getUserName(), person.getName());
-                    sendMessage(cActions.ALERT, "PERSON_REMOVED");
-                    client.showHumans();
-                } else {
-                    sendMessage(cActions.ALERT, "NO_PERSON");
-                }
+            case 1:
+                client.sendMessage(Actions.REQUESTTOKEN, "UNCONF_TOKEN");
+                String token = client.readCMD().getArg(0);
+
+                if (server.getDBC().checkRegToken(client, login, token))
+                    authorize(client, login);
+
                 break;
-            case "teleport":
+            case 2:
+                client.sendMessage(Actions.ALERT, "WRONG_LOG_PASS");
+                break;
+        }
+    }
+
+    private void rotare(Client client, String direction) {
+        server.rotarePLR(client, direction);
+    }
+
+    private void move(Client client, String direction) {
+        if (client.getHuman() != null) {
+            Moves move;
+            try {
+                move = Moves.valueOf(direction.toUpperCase());
+                server.movPlayer(client, move);
+            } catch (NotAliveException e) {
+                client.sendMessage(Actions.ALERT, e.getMessage());
+            } catch (Exception e) {
+                System.err.println("Неправильно указано направление движения");
+            }
+        }
+    }
+
+    private void shoot(Client client) {
+        Human person = client.getHuman();
+
+        if (person.getAmmo() > 0) {
+            server.shootFromClient(client);
+        } else if (!client.isReloading()){
+            new Thread(() -> {
+                client.setReloading(true);
+
                 try {
-                    Human crte = client.getHuman();
-                    double x = Double.parseDouble(cmd.getArgs()[0]);
-                    double y = Double.parseDouble(cmd.getArgs()[1]);
-                    crte.teleportOther(x, y);
-                    server.tpPlayer(client, x, y);
-                } catch (NotAliveException e) {
-                    sendMessage(cActions.ALERT, e.getMessage());
+                    Thread.sleep(3000);
+                } catch (InterruptedException ignored) {
                 }
-                break;
-            case "hit":
-                Human hitted = wrldMngr.getHuman(cmd.getArgs()[0]);
-                hitted.setHealth(hitted.getHealth() - 10);
-                if (!hitted.isAlive()) {
-                    server.getDBC().removePerson(hitted.getUser(), hitted.getName());
-                    wrldMngr.removeHuman(hitted.getName());
-                    for (Client c : server.getClients()) {
-                        if (c.getUserName().equals(hitted.getUser())) {
-                            c.removeHuman(hitted.getName());
+
+                person.reload();
+                client.sendMessage(Actions.RELOAD, person.getName());
+
+                client.setReloading(false);
+            }).start();
+        }
+
+    }
+
+    private void hitPerson(String arg) {
+        Human hitted = world.getHuman(arg);
+
+        synchronized (hitted) {
+            hitted.hit();
+
+            if (!hitted.isAlive()) {
+
+                server.getClients()
+                        .stream()
+                        .filter(c -> c.getUserName()
+                                .equals(hitted.getUser()))
+                        .forEach(c -> {
                             c.setHuman(null);
-                            c.setKey(null);
-                            c.showHumans();
-                            break;
-                        }
-                    }
-                    server.killPlayer(hitted.getName());
-                    server.getPuddles().add(new Location(hitted.getLocation().getX(), hitted.getLocation().getY()));
-                }
-                break;
-            case "shoot":
-                Human h1 = client.getHuman();
-                h1.shoot();
+                            c.removeHuman(hitted.getName());
+                        });
 
-                if (h1.getAmmo() <= 0) {
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(3000);
-                        } catch (InterruptedException ignored) { }
-                        h1.reload();
-                        client.sendMessage(cActions.RELOAD, h1.getName());
-                    }).start();
-                }
-
-                server.shootFromPlr(client);
-                break;
-            case "move":
-                    if (client.getHuman() != null) {
-                        Moves move = null;
-                        try {
-                            move = Moves.valueOf(cmd.getArgs()[0].toUpperCase());
-                        } catch (Exception e) {
-                            System.err.println("Неправильно указано направление движения");
-                        }
-                        if (move != null) {
-                            try {
-                                Human crte = client.getHuman();
-                                crte.move(move);
-                                server.movPlayer(client, move);
-                            } catch (NotAliveException e) {
-                                sendMessage(cActions.ALERT, e.getMessage());
-                            }
-                        }
-                    }
-                break;
-            case "rotare":
-                server.rotarePLR(client, cmd.getArgs()[0]);
-                Moves move123 = Moves.valueOf(cmd.getArgs()[0]);
-                client.getHuman().setLastMove(move123);
-                break;
-            case "exit":
-                client.closeConnection();
-                break;
+                server.killPlayer(hitted.getName());
+                server.getPuddles().add(new Location(hitted.getLocation().getX(), hitted.getLocation().getY()));
+            }
         }
     }
 
-    public boolean auth(Command cmd) {
-        if (isUsrOnServer(cmd.getArgs()[0])) {
-            client.sendMessage(cActions.ALERT, "USER_ALREADY_AUTH");
-            return false;
+    public void authorize(Client client, String username) {
+
+        if (isUserOnServer(username)) {
+            client.sendMessage(Actions.ALERT, "USER_ALREADY_AUTH");
+            return;
         }
-        client.setIsAuth(true);
-        client.setIsTokenValid(true);
-        client.setUserName(cmd.getArgs()[0]);
-        setAuthToken(client);
-        server.getDBC().loadPersons(client);
-        client.sendMessage(cActions.ALERT, "AUTH_SUCCESS");
+
+        client.setAuthorized(true);
+        client.setUserName(username);
+
+        client.sendMessage(Actions.ALERT, "AUTH_SUCCESS");
+        server.sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
+
+        server.getDBC().sendPersons(client);
+
         server.loadPLRS(client);
         server.loadPDLS(client);
-        server.sendToAllClients(client.getUserName()+ " AUTHORIZED", null);
-        return true;
     }
 
-    public void deauth() {
-        if (client.getHuman() != null) {
-            server.remPlayer(client.getKey());
-        }
-        client.setHuman(null);
-        client.setIsAuth(false);
-        client.setKey(null);
+    public void deauth(Client client) {
+
+        if (client.getHuman() != null)
+            server.hidePlayer(client.getHuman().getName());
+
+        client.setAuthorized(false);
         server.sendToAllClients(client.getUserName() + " LEFT_SERVER", null);
-        client.setUserName(DataBaseConnection.getToken());
-        client.getPersons().clear();
-        client.sendMessage(cActions.DEAUTH, null);
+
     }
 
-    private void sendMessage(cActions action, String str) {
-        client.sendMessage(action, str);
+    private void showStats(Client client, String arg) {
+        Human stat = world.getHuman(arg);
+        if (stat != null) {
+            client.sendMessage(Actions.STATS, null, stat);
+        } else
+            client.sendMessage(Actions.ALERT, "NO_PERSON");
     }
 
-    private boolean isUsrOnServer(String user) {
+    private void trySelect(Client client, String arg) {
+
+        Human sel = client.getPersons().get(arg);
+
+        if (sel != null) {
+
+            if (client.getHuman() == sel)
+                client.sendMessage(Actions.ALERT, "PERSON_ALREADY_SELECTED");
+            else
+                client.setHuman(sel);
+
+        } else
+            client.sendMessage(Actions.ALERT, "NO_PERSON");
+    }
+
+    private void createNewPerson(Client client, Human person) {
+        if (world.getHuman(person.getName()) == null) {
+
+            person.setUser(client.getUserName());
+
+            server.addNewPerson(client, person);
+        } else {
+            client.readHuman();
+            client.sendMessage(Actions.ALERT, "SAME_NAME");
+        }
+    }
+
+    private void removePerson(Client client, String arg) {
+
+        Human person = client.getPersons().get(arg);
+
+        if (person != null) {
+
+            if (client.getHuman() == person)
+                client.setHuman(null);
+
+            client.removeHuman(person.getName());
+
+        } else {
+            client.sendMessage(Actions.ALERT, "NO_PERSON");
+        }
+    }
+
+    private void teleportPerson(Client client, String arg1, String arg2) {
+        try {
+
+            double x = Double.parseDouble(arg1);
+            double y = Double.parseDouble(arg2);
+
+            server.tpPlayer(client, x, y);
+        } catch (NotAliveException e) {
+            client.sendMessage(Actions.ALERT, e.getMessage());
+        }
+    }
+
+    private boolean isUserOnServer(String user) {
         return server.getClients().stream()
                 .anyMatch(c -> c.getUserName().equals(user) && c.isTokenValid());
     }
 
-    private boolean isAuthCMD(Command cmd) {
-        if (cmd.getName().equals("register") || cmd.getName().equals("login") || cmd.getName().equals("deauth"))
-            return true;
-        else return false;
-    }
-
-    private void sendMessage(cActions action, Object obj) {
-        client.sendMessage(action, "", obj);
-    }
-
-    void setAuthToken(Client client) {
-        String token = DataBaseConnection.getToken();
-        client.setIsAuth(true);
-        client.sendMessage(cActions.AUTH, token);
-        server.getDBC().setAuthToken(client.getUserName(), token);
-    }
 }

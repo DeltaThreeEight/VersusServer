@@ -1,4 +1,4 @@
-package IOStuff;
+package Server;
 
 import Entities.Human;
 import Entities.Merc;
@@ -8,9 +8,10 @@ import com.google.gson.*;
 
 import java.lang.reflect.Type;
 
-public class MyDeserialize implements JsonSerializer<Human>, JsonDeserializer<Human> {
+public class GsonController implements JsonSerializer<Human>, JsonDeserializer<Human> {
 
     public Human deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException {
+
         JsonObject object = json.getAsJsonObject();
         JsonObject locObject = object.get("loc").getAsJsonObject();
 
@@ -24,7 +25,7 @@ public class MyDeserialize implements JsonSerializer<Human>, JsonDeserializer<Hu
         if (jtype.equals("Spy")) return new Spy(name, loc);
         if (jtype.equals("Merc")) return new Merc(name, loc);
 
-        throw new JsonParseException("Не удалось распознать тип");
+        throw new JsonParseException("Не удалось распознать тип.");
     }
 
     public JsonElement serialize(Human src, Type type,

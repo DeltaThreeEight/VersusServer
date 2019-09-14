@@ -1,12 +1,22 @@
 package Entities;
 
 import Exceptions.NotAliveException;
+import Server.Commands.ClientCommand;
 import World.Location;
+import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Ellipse;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.*;
+import javafx.util.Duration;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -20,6 +30,9 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     private LocalDateTime dateOfCreation;
     private double speedModifier = 1.0;
     private String user = "default";
+
+    // Чисто клиентские поля
+    private Rectangle col_rec;
     protected Ellipse body;
     protected Ellipse head;
     protected Ellipse right_hand;
@@ -27,28 +40,7 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     protected Rectangle right_arm;
     protected Rectangle left_arm;
     protected Rectangle gun;
-    private Rectangle col_rec;
     protected Pane root;
-
-    public Moves getLastMove() {
-        return lastMove;
-    }
-
-    public Rectangle getCol_rec() {
-        return col_rec;
-    }
-
-    public void setCol_rec(Rectangle col_rec) {
-        this.col_rec = col_rec;
-    }
-
-    public void setLastMove(Moves move) {
-        lastMove = move;
-    }
-
-    public static void kill(double x, double y) {}
-
-    public void rotare(boolean b) {}
 
     public void setUser(String str) {
         user = str;
@@ -62,14 +54,6 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         this.name = iName;
         this.loc = new Location(0, 0);
         dateOfCreation = LocalDateTime.now();
-    }
-
-    public int getAmmo() {
-        return ammo;
-    }
-
-    public void reload() {
-        ammo = 30;
     }
 
     public Human(String iName, Location iLoc) {
@@ -86,23 +70,15 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         setTranslateX(loc.getX());
     }
 
-    public void show() {}
-
-
-    public void show(String res) {}
-    public void hide() {}
-
-    public boolean checkIntersects(Moves move) {return false;}
-
-    public void teleport(double x, double y) {}
-
     public void teleportOther(double x, double y) {
         setTranslateX(x);
         setTranslateY(y);
         loc.setXY(x, y);
     }
 
-    public void moveOther(Moves move) {}
+    public void setLastMove(Moves move) {
+        lastMove = move;
+    }
 
     public void move(Moves move) throws NotAliveException {
 
@@ -118,35 +94,28 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
         } else System.out.println("Перемещение невозможно");
     }
 
-    public void shootOther() {
-
+    public void hit() {
+        setHealth(hp - 10);
     }
 
-    public void shootAnim() {}
+    public int getAmmo() {
+        return ammo;
+    }
+
+    public void reload() {
+        ammo = 30;
+    }
 
     public void shoot() {
         ammo--;
-    }
-
-    public int getHealth() {
-        return hp;
     }
 
     public Location getLocation() {
         return loc;
     }
 
-    public double getSpeedModifier() {
-        return speedModifier;
-    }
-
     public void setSpeedModifier(Double mod) {
         speedModifier = mod;
-    }
-
-    public void died(Human human) {
-        hp = 0;
-        System.out.println(name + " был убит " + human.getName() + "ом");
     }
 
     public String getName() {
@@ -166,10 +135,14 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Human)) return false;
-        Human creature = (Human) o;
-        return Objects.equals(name, creature.name) &&
-                Objects.equals(loc, creature.loc) &&
-                Objects.equals(hp, creature.hp);
+        Human human = (Human) o;
+        return hp == human.hp &&
+                Double.compare(human.speedModifier, speedModifier) == 0 &&
+                Objects.equals(name, human.name) &&
+                Objects.equals(loc, human.loc) &&
+                lastMove == human.lastMove &&
+                Objects.equals(dateOfCreation, human.dateOfCreation) &&
+                Objects.equals(user, human.user);
     }
 
     public LocalDateTime getDate() {
@@ -194,5 +167,33 @@ public abstract class Human extends FlowPane implements Moveable, Comparable<Hum
                 + Math.pow((getLocation().getX()-moveable.getLocation().getX()), 2.0));
     }
 
+
+    // Чисто клиентские методы, нужны только для совместимости объектов
+    public Moves getLastMove() {
+        return lastMove;
+    }
+    public Rectangle getCollisionBox() {
+        return col_rec;
+    }
+    public void setCollisionBox(Rectangle col_rec) {
+        this.col_rec = col_rec;
+    }
+    public void setHandler(Object handler) { }
+    public void show() { }
+    public void show(String res) { }
+    public void hide() { }
+    public void moveOther(Moves move) { }
+    public void teleport(double x, double y) { }
+    public boolean checkIntersects(Moves move) { return false; }
+    public void rotare(boolean b) { }
+    public void shootOther() { }
+    public int getHealth() {
+        return hp;
+    }
+    public void shootAnim() { }
+    public void died(Human human) { }
+    public double getSpeedModifier() {
+        return speedModifier;
+    }
 
 }

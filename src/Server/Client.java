@@ -2,128 +2,134 @@ package Server;
 
 
 import Entities.Human;
+import Server.Commands.ClientCommand;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Client {
-    private static volatile AtomicInteger id = new AtomicInteger(0);
+public class Client implements Runnable {
+    private static volatile AtomicInteger idGenerator = new AtomicInteger(0);
     private String userName;
     private ObjectInputStream reader;
     private ObjectOutputStream writer;
-    private Socket client;
+    private Socket clientSocket;
     private boolean isAuth = false;
     private boolean isTokenValid = true;
     private HashMap<String, Human> persons = new HashMap<>();
     private Server server;
-    private ClientCommandHandler cmdHandler = null;
+    private int id;
+    private boolean reloading = false;
 
     private Human human;
-    private String key;
 
     Client(Socket socket, Server server) {
-        userName = id.getAndIncrement()+"";
-        client = socket;
+        id = idGenerator.getAndIncrement();
+        userName = id+"";
+
+        clientSocket = socket;
         this.server = server;
+
         try {
-            InputStream inputClientStream = client.getInputStream();
-            OutputStream outClientStream = client.getOutputStream();
+
+            InputStream inputClientStream = clientSocket.getInputStream();
+            OutputStream outClientStream = clientSocket.getOutputStream();
+
             reader = new ObjectInputStream(inputClientStream);
             writer = new ObjectOutputStream(outClientStream);
+
         } catch (IOException e) {
-            System.out.println("Невозможно получить поток ввода!");
+            System.err.printf("Ошибка при подключении клиента %s: %s\n", userName, e.getMessage());
         }
     }
 
-    void setIsAuth(boolean a) {
-        isAuth = a;
+    public boolean isReloading() {
+        return reloading;
     }
 
-    void setIsTokenValid(boolean a) {
-        isTokenValid = a;
+    public void setReloading(boolean reloading) {
+        this.reloading = reloading;
+    }
+
+    void setAuthorized(boolean authorized) {
+        isAuth = authorized;
+        isTokenValid = authorized;
+        if (!authorized) {
+            human = null;
+            userName = id+"";
+            persons.clear();
+            sendMessage(Actions.DEAUTH, null);
+        }
     }
 
     boolean isTokenValid() {
         return isTokenValid;
     }
 
-    boolean getIsAuth() {
+    boolean isAuthorized() {
         return isAuth;
     }
 
     void closeConnection() {
         try {
+            reader.close();
             writer.close();
-            client.close();
+            clientSocket.close();
         } catch (IOException e) {
-            System.out.println("Соединение с клиентом оборвалось");
+            System.err.printf("Соединение с клиентом %s оборвалось при попытке закрыть соединение: %s\n", userName, e.getMessage());
         }
     }
 
-    void startService() {
-        Thread thread = new Thread(this::servClient);
-        thread.start();
-    }
-
-    void setKey(String key) {
-        this.key = key;
-    }
-
-    String getKey() {
-        return key;
+    int getId() {
+        return id;
     }
 
     Server getServer() {
         return server;
     }
 
-    private void servClient() {
+    public void run() {
         try {
 
-            cmdHandler = new ClientCommandHandler(this , server);
-            Command cmd = readCMD();
+            ClientCommand cmd = readCMD();
 
-                while (!cmd.getName().equals("exit")) {
-                    System.out.println("Клиент " + userName + ": " + cmd.getName());
-                    cmdHandler.executeCommand(cmd);
-                    cmd = readCMD();
-                }
+            while (!cmd.getCommandName().equals("exit")) {
+                System.out.printf("Клиент %s: %s\n", userName, cmd.getCommandName());
+                server.executeClientCommand(this, cmd);
+                cmd = readCMD();
+            }
 
-            System.out.println("Клиент " + userName + " отключился.");
+            System.out.printf("Клиент %s отключился.\n", userName);
 
         } catch (Exception e) {
             if (!server.isClosing()) {
-                System.err.println(String.format("Потеряно соединение с клиентом %s.", userName));
-                System.err.println(e.getMessage());
+                System.err.printf("Потеряно соединение с клиентом %s: %s\n", userName, e.getMessage());
             }
-        }
-        finally {
-            if (getKey() != null) server.remPlayer(getKey());
+        } finally {
+            if (human != null)
+                server.hidePlayer(human.getName());
             server.remClient(this);
         }
     }
 
-    public void sendMessage(cActions action, String str) {
+    public void sendMessage(Actions action, String str) {
         try {
             writer.writeUTF(action + "^" + str);
             writer.flush();
         } catch (IOException e) {
             if (!server.isClosing())
-                System.err.println("Ошибка при отправке сообщения клиенту");
+                System.err.printf("Ошибка при отправке сообщения клиенту %s: %s\n", userName, e.getMessage());
         }
     }
 
-    void sendMessage(cActions action, String str, Object human) {
+    public void sendMessage(Actions action, String str, Object human) {
         try {
             writer.writeUTF(action + "^" + str);
             writer.flush();
             sendObject(human);
         } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Ошибка при отправке объекта клиента");
+            System.out.printf("Ошибка при отправке объекта клиенту %s: %s\n", e.getMessage());
         }
     }
 
@@ -131,10 +137,6 @@ public class Client {
         writer.writeObject(obj);
         writer.flush();
         writer.reset();
-    }
-
-    ClientCommandHandler getCmdHandler() {
-        return cmdHandler;
     }
 
     String getUserName() {
@@ -145,30 +147,35 @@ public class Client {
         this.userName = userName;
     }
 
-    Command readCMD() {
+    ClientCommand readCMD() {
         try {
-            return (Command) reader.readObject();
-        } catch (SocketException ignored) {
-
+            return (ClientCommand) reader.readObject();
         } catch (Exception e) {
-                System.err.println("Ошибка при чтении команды");
-                e.printStackTrace();
+            System.err.printf("Ошибка при чтении команды от клиента %s: %s\n", userName, e.getMessage());
+            return null;
         }
-        return null;
     }
 
     Human readHuman() {
         try {
             return (Human) reader.readObject();
         } catch (Exception e) {
-            System.err.println("Ошибка при приёме персонажа");
-            System.err.println(e.getMessage());
+            System.err.printf("Ошибка при приёме персонажа от клиента %s: %s\n", userName, e.getMessage());
             return null;
         }
     }
 
     public void setHuman(Human human) {
+        if (this.human != null)
+            server.hidePlayer(this.human.getName());
+
         this.human = human;
+
+        if (human != null) {
+            sendMessage(Actions.ALERT, "PERSON_SELECTED " + human.getName());
+            sendMessage(Actions.DESERIALIZE, null, human);
+            server.showPlayer(this, human);
+        }
     }
 
     public Human getHuman() {
@@ -176,15 +183,23 @@ public class Client {
     }
 
     void showHumans() {
-        persons.values().stream().map(Human::getName).forEach(c -> sendMessage(cActions.USRPRSN, c+"\n"));
-        sendMessage(cActions.USRPRSN, "$EOF$");
+        String[] names = persons.values()
+                .stream()
+                .map(Human::getName)
+                .toArray(String[]::new);
+
+        sendMessage(Actions.SENDPERSONLIST, null, names);
     }
 
     void addHuman(Human human) {
         persons.put(human.getName(), human);
+        showHumans();
     }
     void removeHuman(String key) {
         persons.remove(key);
+        server.removePerson(key, userName);
+        sendMessage(Actions.ALERT, "PERSON_REMOVED");
+        showHumans();
     }
 
     HashMap<String, Human> getPersons() {

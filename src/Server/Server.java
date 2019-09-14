@@ -2,112 +2,167 @@ package Server;
 
 import Entities.Human;
 import Entities.Moves;
+import Server.Commands.ClientCommand;
 import World.Location;
+import World.WorldManager;
 
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Server extends Thread {
+public class Server implements Runnable {
     private ServerSocket serverSocket = null;
     private List<Client> clients = new CopyOnWriteArrayList<Client>();
-    private int port = 8901;
-    private String host = "localhost";
+    private int port;
+    private String host;
     private DataBaseConnection dataBaseConnection = null;
     private boolean isClosing = false;
     private List<Location> puddles = new CopyOnWriteArrayList<>();
-
-    public Server() {
-    }
+    private WorldManager world;
+    private ThreadGroup clientThreads;
+    private ClientCommandHandler commandHandler;
 
     public List<Location> getPuddles() {
         return puddles;
     }
 
-    public Server(int port) {
-        this.port = port;
-    }
-
-    public Server(int port, String host) {
+    public Server(String host, int port, WorldManager world) {
         this.port = port;
         this.host = host;
+        this.world = world;
+        commandHandler = new ClientCommandHandler(this);
     }
 
     public void run() {
-        System.out.println("Попытка запустить сервер на "+host+":"+port+ "...");
+        System.out.printf("Попытка запустить сервер на %s:%s\n", host, port);
+
         try {
             serverSocket = new ServerSocket(port, 100, InetAddress.getByName(host));
-            System.out.println("Сервер запущен! Адрес: "+serverSocket.getInetAddress());
-            System.out.println("Порт: "+serverSocket.getLocalPort());
+
+            System.out.printf("Сервер запущен! Адрес: %s\n", serverSocket.getInetAddress());
+            System.out.printf("Порт: %s\n", serverSocket.getLocalPort());
+
             System.out.println("\nИнициализация соединения с БД...");
-            dataBaseConnection = new DataBaseConnection();
+
+            dataBaseConnection = new DataBaseConnection(world, this);
+
             System.out.println("Загрузка персонажей...");
-            System.out.println("Загружено " + dataBaseConnection.loadPersons() + " персонажей.");
+            int n = dataBaseConnection.loadPersonsFromDB();
+            
+            if (n == -1) {
+                System.out.println("Попытка создать БД...");
+                dataBaseConnection.createDB();
+                System.out.println("БД успешно создана!");
+                n = 0;
+            }
+
+            System.out.printf("Загружено %d персонажей.\n", n);
+
+            // Перед выключением надо все данные загрузить в бд
             Runtime.getRuntime().addShutdownHook(new Thread(() ->
                 dataBaseConnection.updatePersons()
             ));
-        } catch (IOException e) {
-            System.out.println("Не очень хорошие проблемы... Прекращаю выполнение!");
+
+        } catch (Exception e) {
+            System.err.printf("Причина: %s\n", e.getMessage());
+            System.err.println("Не очень хорошие проблемы... Прекращаю выполнение!");
             System.exit(-1);
         }
+
+        clientThreads = new ThreadGroup("Clients");
 
         while (!isClosing) {
             Client client = new Client(waitConnection(), this);
             clients.add(client);
-            client.startService();
+
+            Thread clientThread = new Thread(clientThreads, client);
+            clientThread.start();
         }
     }
 
-    void addPlayer(Client client, Human player) {
-        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.ADDPLAYER, player.getName()+"^", player));
+
+    void executeClientCommand(Client client, ClientCommand command) {
+        commandHandler.executeCommand(client, command);
+    }
+
+    private Socket waitConnection() {
+        try {
+            Socket client;
+            client = serverSocket.accept();
+            System.out.println("Подключился клиент.");
+            return client;
+        } catch (IOException e) {
+            System.err.printf("Не удалось установить соединение с клиентом: %s", e.getMessage());
+            return null;
+        }
+    }
+
+    public void stopServer() {
+        isClosing = true;
+        clientThreads.interrupt();
+        //System.exit(0);
+    }
+
+    void deauth(Client client) {
+        commandHandler.deauth(client);
+    }
+
+    void showPlayer(Client client, Human player) {
+        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.ADDPLAYER, player.getName()+"^", player));
     }
 
     void movPlayer(Client client, Moves move) {
-        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.MOVPLAYER, move+"^"+client.getHuman().getName()));
+        client.getHuman().move(move);
+        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.MOVPLAYER, move+"^"+client.getHuman().getName()));
     }
 
     void tpPlayer(Client client, double x, double y) {
-        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.TELEPORT, x+" "+y+"^"+client.getHuman().getName()));
+        client.getHuman().teleportOther(x, y);
+        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.TELEPORT, x+" "+y+"^"+client.getHuman().getName()));
     }
 
-    void shootFromPlr(Client client) {
-        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.SHOOT, client.getHuman().getName()));
+    void shootFromClient(Client client) {
+        client.getHuman().shoot();
+        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.SHOOT, client.getHuman().getName()));
     }
 
     void loadPLRS(Client client) {
-        clients.stream().filter(c -> c.getKey() != null)
-                .forEach(c -> client.sendMessage(cActions.LOADPLR, c.getKey() + "^", c.getHuman()));
+        clients.stream().filter(c -> c.getHuman() != null)
+                .forEach(c -> client.sendMessage(Actions.LOADPLAYERS, c.getHuman().getName() + "^", c.getHuman()));
     }
 
     void loadPDLS(Client client) {
-        puddles.stream().forEach(c -> client.sendMessage(cActions.LOADPUDDLE, c.toString()));
+        puddles.stream().forEach(c -> client.sendMessage(Actions.LOADPUDDLE, c.toString()));
     }
 
     void rotarePLR(Client client, String move) {
-        clients.stream().filter(c -> c != client).filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.ROTARE, client.getHuman().getName() + "^" + move));
+        client.getHuman().setLastMove(Moves.valueOf(move.toUpperCase()));
+        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.ROTARE, client.getHuman().getName() + "^" + move));
     }
 
-    void remPlayer(String player) {
-        clients.stream().filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.REMPLAYER, player));
+    void hidePlayer(String player) {
+        clients.stream().filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.REMPLAYER, player));
     }
 
     void killPlayer(String player) {
-        clients.stream().filter(c -> c.getIsAuth())
-                .forEach(c -> c.sendMessage(cActions.KILLPLAYER, player));
+        clients.stream().filter(c -> c.isAuthorized())
+                .forEach(c -> c.sendMessage(Actions.KILLPLAYER, player));
+    }
+
+    void addNewPerson(Client client, Human human) {
+        getDBC().addPersonToDB(client.getUserName(), human);
+        world.addNewHuman(human);
+        client.addHuman(human);
     }
 
     void remClient(Client client) {
@@ -117,18 +172,17 @@ public class Server extends Thread {
     public void sendToAllClients(String str, Client client) {
         if (client != null)
             clients.stream()
-                    .filter(c -> c.getIsAuth())
-                    .forEach(c -> c.sendMessage(cActions.SEND, "" + client.getUserName() + ": " + str + "\n"));
+                    .filter(c -> c.isAuthorized())
+                    .forEach(c -> c.sendMessage(Actions.SEND, "" + client.getUserName() + ": " + str + "\n"));
         else
             clients.stream()
-                    .filter(c -> c.getIsAuth())
-                    .forEach(c -> c.sendMessage(cActions.SEND, "SERVER_MESSAGE -> "+ str + "\n"));
+                    .filter(c -> c.isAuthorized())
+                    .forEach(c -> c.sendMessage(Actions.SEND, "SERVER_MESSAGE -> "+ str + "\n"));
     }
 
-    public void stopServer() {
-        isClosing = true;
-        clients.forEach(c -> c.closeConnection());
-        System.exit(0);
+
+    WorldManager getWorld() {
+        return world;
     }
 
     List<Client> getClients() {
@@ -147,84 +201,9 @@ public class Server extends Thread {
         return isClosing;
     }
 
-    private Socket waitConnection() {
-        try {
-            Socket client;
-            System.out.println("Ждём нового соединения...");
-            client = serverSocket.accept();
-            System.out.println("Подключение успешно.");
-            return client;
-        } catch (IOException e) {
-            System.out.println("Что то не так");
-            return null;
-        }
+    public void removePerson(String key, String username) {
+        getDBC().removePerson(key, username);
+        getWorld().removeHuman(key);
     }
 }
 
-class JavaMail {
-    private static final String ENCODING = "UTF-8";
-
-    static void registration(String email, String reg_token){
-        String subject = "Confirm registration";
-        String content = "Registration token: "+reg_token;
-        String smtpHost="mail.buycow.org";
-        String from="Lab8@buycow.org";
-        String login="dimadarthrevan";
-        String password="123456";
-        String smtpPort="25";
-        try {
-            sendSimpleMessage(login, password, from, email, content, subject, smtpPort, smtpHost);
-        } catch (Exception e) {
-            System.out.println("Не удалось отправить письмо");
-        }
-    }
-
-    public static void main(String args[]) throws MessagingException {
-//        String subject = "Confirm registration";
-//        String content = "Click on the link...";
-//        String smtpHost="mail.buycow.org";
-//        String from="makailyn.talei@buycow.org";
-//        String to = "mccabe.jireh@buycow.org";
-//        String login="makailyn.talei";
-//        String password="Login1";
-//        String smtpPort="25";
-//        sendSimpleMessage (login, password, from, to, content, subject, smtpPort, smtpHost);
-    }
-
-    private static void sendSimpleMessage(String login, String password, String from, String to, String content, String subject, String smtpPort, String smtpHost)
-            throws MessagingException {
-        Authenticator auth = new MyAuthenticator(login, password);
-
-        Properties props = System.getProperties();
-        props.put("mail.smtp.port", smtpPort);
-        props.put("mail.smtp.host", smtpHost);
-        props.put("mail.smtp.auth", "true");
-        //props.put("mail.smtp.ssl.enable", "true");
-        //props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-        props.put("mail.mime.charset", ENCODING);
-        Session session = Session.getDefaultInstance(props, auth);
-
-        Message msg = new MimeMessage(session);
-        msg.setFrom(new InternetAddress(from));
-        msg.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
-        msg.setSubject(subject);
-        msg.setText(content);
-        Transport.send(msg);
-    }
-}
-
-class MyAuthenticator extends Authenticator {
-    private String user;
-    private String password;
-
-    MyAuthenticator(String user, String password) {
-        this.user = user;
-        this.password = password;
-    }
-
-    public PasswordAuthentication getPasswordAuthentication() {
-        String user = this.user;
-        String password = this.password;
-        return new PasswordAuthentication(user, password);
-    }
-}
