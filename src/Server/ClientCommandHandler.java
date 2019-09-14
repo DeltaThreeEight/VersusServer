@@ -267,7 +267,8 @@ class ClientCommandHandler {
     }
 
     private boolean isUserOnServer(String user) {
-        return server.getClients().stream()
+        return server.getClients()
+                .stream()
                 .anyMatch(c -> c.getUserName().equals(user) && c.isTokenValid());
     }
 
