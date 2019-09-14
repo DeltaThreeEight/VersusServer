@@ -112,50 +112,62 @@ public class Server implements Runnable {
     }
 
     void showPlayer(Client client, Human player) {
-        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c != client)
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.ADDPLAYER, player.getName()+"^", player));
     }
 
     void movPlayer(Client client, Moves move) {
         client.getHuman().move(move);
-        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c != client)
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.MOVPLAYER, move+"^"+client.getHuman().getName()));
     }
 
     void tpPlayer(Client client, double x, double y) {
         client.getHuman().teleportOther(x, y);
-        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c != client)
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.TELEPORT, x+" "+y+"^"+client.getHuman().getName()));
     }
 
     void shootFromClient(Client client) {
         client.getHuman().shoot();
-        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c != client)
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.SHOOT, client.getHuman().getName()));
     }
 
     void loadPLRS(Client client) {
-        clients.stream().filter(c -> c.getHuman() != null)
+        clients.stream()
+                .filter(c -> c.getHuman() != null)
                 .forEach(c -> client.sendMessage(Actions.LOADPLAYERS, c.getHuman().getName() + "^", c.getHuman()));
     }
 
     void loadPDLS(Client client) {
-        puddles.stream().forEach(c -> client.sendMessage(Actions.LOADPUDDLE, c.toString()));
+        puddles.forEach(c -> client.sendMessage(Actions.LOADPUDDLE, c.toString()));
     }
 
     void rotarePLR(Client client, String move) {
         client.getHuman().setLastMove(Moves.valueOf(move.toUpperCase()));
-        clients.stream().filter(c -> c != client).filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c != client).filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.ROTARE, client.getHuman().getName() + "^" + move));
     }
 
     void hidePlayer(String player) {
-        clients.stream().filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.REMPLAYER, player));
     }
 
     void killPlayer(String player) {
-        clients.stream().filter(c -> c.isAuthorized())
+        clients.stream()
+                .filter(c -> c.isAuthorized())
                 .forEach(c -> c.sendMessage(Actions.KILLPLAYER, player));
     }
 

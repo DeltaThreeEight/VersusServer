@@ -198,7 +198,6 @@ public class Client implements Runnable {
     void removeHuman(String key) {
         persons.remove(key);
         server.removePerson(key, userName);
-        sendMessage(Actions.ALERT, "PERSON_REMOVED");
         showHumans();
     }
 

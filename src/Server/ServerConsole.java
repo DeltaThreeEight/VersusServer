@@ -108,7 +108,7 @@ public class ServerConsole {
                     if (server.hasPlayers())
                         throw new CommandExecuteException(command, "Команда %s не поддерживается, когда на сервере есть игроки\n");
 
-                    //TODO Реализация инсерта
+                    //Реализация инсерта..
                     //А может её вообще не надо?
                     break;
                 case "show":
@@ -121,7 +121,7 @@ public class ServerConsole {
                     world.clear();
                     break;
                 case "save":
-                    //TODO Запись в БД
+                    server.getDBC().updatePersons();
                     break;
                 case "info":
                     world.getInfo();
@@ -129,19 +129,8 @@ public class ServerConsole {
                 case "help":
                     help();
                     break;
-                case "remove":
-                    if (command.getArgsCount() < 2)
-                        throw new CommandExecuteException(command, "Отсутсвуют аргументы команды %s\n");
-
-                    if (server.hasPlayers())
-                        throw new CommandExecuteException(command, "Операция %s не поддерживается, когда на сервере есть игроки\n");
-
-                    //server.getDBC().removePerson(commands[1], commands[2]);
-                    //wrldMngr.removeHuman(commands[1]);
-
-                    break;
                 case "send":
-                    if (command.getArgsCount() < 2)
+                    if (command.getArgsCount() < 1)
                         throw new CommandExecuteException(command, "Отсутсвуют аргументы команды %s\n");
 
                     server.sendToAllClients(command.getArgsAsOne(), null);

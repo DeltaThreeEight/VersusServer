@@ -158,17 +158,16 @@ class ClientCommandHandler {
             hitted.hit();
 
             if (!hitted.isAlive()) {
+                server.killPlayer(hitted.getName());
 
                 server.getClients()
                         .stream()
-                        .filter(c -> c.getUserName()
-                                .equals(hitted.getUser()))
+                        .filter(c -> c.getUserName().equals(hitted.getUser()))
                         .forEach(c -> {
                             c.setHuman(null);
                             c.removeHuman(hitted.getName());
                         });
 
-                server.killPlayer(hitted.getName());
                 server.getPuddles().add(new Location(hitted.getLocation().getX(), hitted.getLocation().getY()));
             }
         }
@@ -248,6 +247,7 @@ class ClientCommandHandler {
                 client.setHuman(null);
 
             client.removeHuman(person.getName());
+            client.sendMessage(Actions.ALERT, "PERSON_REMOVED");
 
         } else {
             client.sendMessage(Actions.ALERT, "NO_PERSON");
