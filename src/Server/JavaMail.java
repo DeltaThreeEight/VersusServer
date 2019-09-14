@@ -8,20 +8,16 @@ import java.util.Properties;
 public class JavaMail {
     private static final String ENCODING = "UTF-8";
 
-    public static void main(String[] args) {
-        registration("kylon.zaiyon@sillver.us" ,"dasdsaddasd");
-    }
-
     static void registration(String email, String reg_token){
         String subject = "Confirm registration";
         String content = String.format("Your registration token: %s\n Token lifetime is 30 minutes.\n", reg_token);
 
         String smtpHost="smtp.gmail.com";
 
-        String from="coolmanmaskit@gmail.com";
-        String login="coolmanmaskit@gmail.com";
-        //TODO убрать эти данные
-        String password="Dima13145@";
+        String from="example@gmail.com";
+        String login="example@gmail.com";
+
+        String password="examplePass";
         String smtpPort="465";
 
         try {
