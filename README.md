@@ -1,7 +1,7 @@
 # versusGame2D-Server
-Серверная часть простого многопользовательского 2D шутера.
+Server side for my multiplayer shooter game
 
-Скриншоты:
+Screenshots:
 
 ![alt text](https://github.com/DeltaThreeEight/versusGame2D-Client/blob/master/images/1.png?raw=true)
 
